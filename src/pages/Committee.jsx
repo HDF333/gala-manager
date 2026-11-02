@@ -5,7 +5,7 @@ export default function Committee() {
   const { user } = useAuth()
 
   const members = [
-    { id: 1, full_name: 'Jean Dupont', role: 'Chef d'orchestre', email: 'jean@gala.com', phone: '06 12 34 56 78', status: 'active', messages: 'Préparation de la salle' },
+    { id: 1, full_name: 'Jean Dupont', role: 'Chef d\'orchestre', email: 'jean@gala.com', phone: '06 12 34 56 78', status: 'active', messages: 'Préparation de la salle' },
     { id: 2, full_name: 'Marie Curie', role: 'Gestion des invités', email: 'marie@gala.com', phone: '06 11 22 33 44', status: 'active', messages: 'Vérification des confirmations' },
     { id: 3, full_name: 'Pierre Petit', role: 'Budget & finance', email: 'pierre@gala.com', phone: '06 22 33 44 55', status: 'active', messages: 'Suivi des paiements' },
     { id: 4, full_name: 'Marie Dubois', role: 'Communiqué', email: 'marie.d@gala.com', phone: '06 33 44 55 66', status: 'active', messages: 'Rédaction du communiqué' },
@@ -82,4 +82,3 @@ export default function Committee() {
   )
 }
 
-export default Committee

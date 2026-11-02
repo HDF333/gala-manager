@@ -133,4 +133,3 @@ export default function Tickets() {
   )
 }
 
-export default Tickets

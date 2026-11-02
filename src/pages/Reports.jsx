@@ -109,4 +109,3 @@ export default function Reports() {
   )
 }
 
-export default Reports

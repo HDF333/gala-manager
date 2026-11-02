@@ -56,6 +56,7 @@ export function useSupabase(table) {
     error,
     fetch,
     insert,
+    send: insert,
     update,
     del,
     refetch: fetch

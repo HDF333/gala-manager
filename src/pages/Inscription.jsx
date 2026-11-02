@@ -181,4 +181,3 @@ export default function Inscription() {
   )
 }
 
-export default Inscription

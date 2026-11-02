@@ -79,4 +79,3 @@ export default function Program() {
   )
 }
 
-export default Program

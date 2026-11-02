@@ -111,4 +111,3 @@ export default function Guests() {
   )
 }
 
-export default Guests

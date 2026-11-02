@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -17,7 +17,7 @@ const navItems = [
   { path: '/qrcodes', label: 'QR Codes', icon: '📱' },
 ]
 
-export default function Layout({ children }) {
+function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { user } = useAuth()
   const location = useLocation()
@@ -36,6 +36,7 @@ export default function Layout({ children }) {
               <span>{item.label}</span>
             </Link>
           ))}
+
         </nav>
         <div className="sidebar-footer">
           <div className="sidebar-footer-user">
@@ -75,3 +76,4 @@ export default function Layout({ children }) {
 }
 
 export default Layout
+

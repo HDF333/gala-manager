@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase'
 import { useSupabase } from '../hooks/useSupabase'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -71,8 +72,11 @@ export default function Users() {
     setBusy(true)
     setMessage('')
     try {
-      // 1. Créer le compte (signup sans email de confirmation)
-      const { data: signUp, error: signUpError } = await supabase.auth.signUp({
+      // 1. Créer le compte via un client isolé (ne remplace pas la session de l'admin)
+      const tempClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: { persistSession: false, autoRefreshToken: false, storageKey: 'even-manager-signup' }
+      })
+      const { data: signUp, error: signUpError } = await tempClient.auth.signUp({
         email: userForm.email,
         password: userForm.password,
         options: { data: { full_name: userForm.full_name } }
@@ -93,7 +97,10 @@ export default function Users() {
       setMessage('Utilisateur créé : il peut se connecter avec son email et mot de passe.')
       refetchProfiles()
     } catch (err) {
-      setMessage('Erreur : ' + (err.message || 'Création impossible'))
+      const msg = err.message || 'Création impossible'
+      setMessage('Erreur : ' + (/rate limit/i.test(msg)
+        ? 'Limite d\'envoi d\'emails Supabase atteinte (quelques comptes par heure). Réessayez plus tard ou créez l\'utilisateur depuis le tableau de bord Supabase.'
+        : msg))
     } finally {
       setBusy(false)
     }

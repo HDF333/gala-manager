@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSupabase } from '../hooks/useSupabase'
+import { hasPerm } from '../lib/permissions'
 import { getCurrentEvent, setCurrentEvent } from '../lib/currentEvent'
 
 const navItems = [
@@ -9,9 +10,9 @@ const navItems = [
   { path: '/scan', label: 'Scanner', icon: '📷', perm: 'scan_qr' },
   { path: '/users', label: 'Utilisateurs', icon: '👤', perm: 'gerer_utilisateurs' },
   { path: '/dashboard', label: 'Tableau de bord', icon: '📊' },
-  { path: '/guests', label: 'Invités', icon: '👥', perm: 'voir_invites' },
+  { path: '/guests', label: 'Participants', icon: '👥', perm: 'voir_invites' },
   { path: '/tickets', label: 'Billets', icon: '🎫', perm: 'voir_billets' },
-  { path: '/inscription', label: 'Inscription', icon: '📝' },
+  { path: '/inscription', label: 'Inscription', icon: '📝', perm: 'gerer_participants' },
   { path: '/administration', label: 'Administration', icon: '🛡️', perm: 'gerer_evenements' },
   { path: '/access-control', label: 'Contrôle d\'accès', icon: '🎟️', perm: 'scan_qr' },
   { path: '/tables', label: 'Tables', icon: '🍽️' },
@@ -38,13 +39,6 @@ const QUICK_ACTIONS = {
   '/program': { label: 'Nouvel élément', selector: 'form' },
   '/committee': { label: 'Nouveau membre', selector: 'form' },
   '/qrcodes': { label: 'Générer un QR code', selector: 'select' },
-}
-
-const hasPerm = (profile, key) => {
-  if (!profile) return false
-  if (profile.role === 'Administrateur') return true
-  const perms = profile.permissions || []
-  return perms.includes('*') || (key ? perms.includes(key) : true)
 }
 
 function Layout({ children }) {

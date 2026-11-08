@@ -31,7 +31,7 @@ beforeEach(() => {
 
 test('route coverage includes all declared pages and the home alias', () => {
   const pageCount = fs.readdirSync(path.resolve('src/pages')).filter(f => f.endsWith('.jsx')).length
-  expect(routes).toHaveLength(pageCount + 2) // '/' alias + public /inscription-publique
+  expect(routes).toHaveLength(pageCount + 1) // '/' alias (la page publique est un message, pas une page)
   expect(new Set(routes.map(([route]) => route)).size).toBe(routes.length)
 })
 

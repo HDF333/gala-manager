@@ -3,27 +3,47 @@ import { createClient } from '@supabase/supabase-js'
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase'
 import { useSupabase } from '../hooks/useSupabase'
 import { useAuth } from '../contexts/AuthContext'
+import { PERMISSIONS } from '../lib/permissions'
 
-const PERMISSIONS = [
-  { key: 'scan_qr', short: 'Scan QR', label: 'Autoriser le scan des QR codes', desc: 'Contrôler l’entrée des invités en scannant leur billet QR.' },
-  { key: 'voir_invites', short: 'Invités', label: 'Autoriser la consultation des invités', desc: 'Voir la liste des invités, leur tribu et leur table.' },
-  { key: 'voir_billets', short: 'Billets', label: 'Autoriser la consultation des billets', desc: 'Voir les billets vendus, leur catégorie et leur statut.' },
-  { key: 'gerer_evenements', short: 'Événements', label: 'Autoriser la gestion des événements', desc: 'Créer, modifier, activer et supprimer des événements.' },
-  { key: 'gerer_categories', short: 'Catégories', label: 'Autoriser la gestion des catégories', desc: 'Ajouter ou modifier les catégories et fixer leurs prix.' },
-  { key: 'gerer_finances', short: 'Finances', label: 'Autoriser la gestion des recettes et dépenses', desc: 'Enregistrer recettes, dépenses et budgets de l’événement.' },
-  { key: 'gerer_utilisateurs', short: 'Utilisateurs', label: 'Autoriser la gestion des utilisateurs', desc: 'Créer des comptes et attribuer rôles, permissions et événements.' },
-]
 
 export default function Users() {
   const { profile } = useAuth()
   const { data: roles = [], insert: addRole, update: updateRole, del: deleteRole } = useSupabase('roles')
   const { data: profiles = [], insert: addProfile, update: updateProfile, del: deleteProfile, refetch: refetchProfiles } = useSupabase('profiles', 'user_id')
   const { data: events = [] } = useSupabase('events')
+  const { data: categories = [], insert: insertCategory, update: updateCategory, del: deleteCategory, refetch: refetchCategories } = useSupabase('categories')
   const [roleForm, setRoleForm] = useState({ name: '', permissions: [] })
   const [editingRole, setEditingRole] = useState(null)
   const [userForm, setUserForm] = useState({ email: '', password: '', full_name: '', role_id: '', event_id: '' })
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [catForm, setCatForm] = useState({ name: '', price: '', seats: 1, admin_only: false })
+  const [editingCat, setEditingCat] = useState(null)
+
+  const saveCategory = async (e) => {
+    e.preventDefault()
+    try {
+      const payload = { name: catForm.name, price: Number(catForm.price) || 0, seats: Number(catForm.seats) || 1, admin_only: catForm.admin_only }
+      if (editingCat) {
+        await updateCategory(editingCat, payload)
+        setMessage('Catégorie modifiée avec succès')
+      } else {
+        await insertCategory({ ...payload, code: 'CAT-' + Date.now() })
+        setMessage('Catégorie ajoutée avec succès')
+      }
+      setEditingCat(null)
+      setCatForm({ name: '', price: '', seats: 1, admin_only: false })
+      refetchCategories()
+    } catch (err) {
+      setMessage('Erreur : ' + (err.message || 'Opération impossible'))
+    }
+  }
+
+  const removeCategory = async (id) => {
+    if (confirm('Supprimer cette catégorie ?')) {
+      try { await deleteCategory(id); setMessage('Catégorie supprimée'); refetchCategories() } catch (err) { setMessage('Erreur : ' + err.message) }
+    }
+  }
 
   const isAdmin = profile?.role === 'Administrateur'
 
@@ -197,6 +217,69 @@ export default function Users() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Gestion des catégories</h2>
+        </div>
+        <div className="card-body">
+          <form onSubmit={saveCategory} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: '0.75rem', alignItems: 'end', marginBottom: '1rem' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Nom</label>
+              <input className="form-input" placeholder="Ex : Premium Seul" value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })} required />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Prix (FCFA)</label>
+              <input className="form-input" type="number" placeholder="150000" value={catForm.price} onChange={(e) => setCatForm({ ...catForm, price: e.target.value })} required />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Personnes</label>
+              <select className="form-select" value={catForm.seats} onChange={(e) => setCatForm({ ...catForm, seats: Number(e.target.value) })}>
+                <option value={1}>1 personne</option>
+                <option value={2}>2 personnes (couple)</option>
+              </select>
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Réservé admin</label>
+              <select className="form-select" value={catForm.admin_only} onChange={(e) => setCatForm({ ...catForm, admin_only: e.target.value === 'true' })}>
+                <option value={false}>Non</option>
+                <option value={true}>Oui</option>
+              </select>
+            </div>
+            <button type="submit" className="btn btn-primary">{editingCat ? 'Mettre à jour' : 'Ajouter'}</button>
+          </form>
+          {editingCat && (
+            <button className="btn btn-secondary btn-sm" style={{ marginBottom: '0.75rem' }} onClick={() => { setEditingCat(null); setCatForm({ name: '', price: '', seats: 1, admin_only: false }) }}>Annuler la modification</button>
+          )}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ background: '#EDF2FB' }}>
+                  <th style={{ padding: '0.75rem' }}>Nom</th>
+                  <th style={{ padding: '0.75rem' }}>Prix</th>
+                  <th style={{ padding: '0.75rem' }}>Personnes</th>
+                  <th style={{ padding: '0.75rem' }}>Admin seulement</th>
+                  <th style={{ padding: '0.75rem' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map((c) => (
+                  <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '0.75rem', fontWeight: 600 }}>{c.name}</td>
+                    <td style={{ padding: '0.75rem' }}>₣ {Number(c.price).toLocaleString('fr-FR')}</td>
+                    <td style={{ padding: '0.75rem' }}>{c.seats || 1}</td>
+                    <td style={{ padding: '0.75rem' }}>{c.admin_only ? 'Oui' : 'Non'}</td>
+                    <td style={{ padding: '0.75rem' }}>
+                      <button className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }} onClick={() => { setEditingCat(c.id); setCatForm({ name: c.name, price: c.price, seats: c.seats || 1, admin_only: !!c.admin_only }) }}>✏️ Modifier</button>
+                      <button className="btn btn-danger btn-sm" onClick={() => removeCategory(c.id)}>🗑️ Supprimer</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

@@ -8,7 +8,7 @@ const fake = vi.hoisted(() => ({ rpc: vi.fn() }))
 vi.mock('qrcode', () => ({
   default: { toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,test') },
 }))
-vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'test' } }) }))
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'test' }, profile: { role: 'Administrateur', permissions: ['*'] } }) }))
 vi.mock('../src/lib/supabase', () => ({
   supabase: {
     rpc: fake.rpc,

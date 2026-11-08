@@ -27,7 +27,7 @@ test('the current page is marked when opened directly and after navigation', asy
   window.history.replaceState({}, '', '/guests')
   render(<App />)
   const nav = screen.getByRole('navigation')
-  const guests = within(nav).getByRole('link', { name: /Invités/ })
+  const guests = within(nav).getByRole('link', { name: /Participants/ })
   const tickets = within(nav).getByRole('link', { name: /Billets/ })
   expect(guests.classList.contains('active')).toBe(true)
   expect(guests.getAttribute('aria-current')).toBe('page')
@@ -50,13 +50,13 @@ test('the Billets link opens the real tickets page', async () => {
   expect(globalThis.fetch).not.toHaveBeenCalled()
 })
 
-test('the Invités link opens the real guests page', async () => {
+test('the Participants link opens the real guests page', async () => {
   render(<App />)
   const nav = screen.getByRole('navigation')
-  const link = within(nav).getByRole('link', { name: /Invités/ })
+  const link = within(nav).getByRole('link', { name: /Participants/ })
   expect(link.getAttribute('href')).toBe('/guests')
   await userEvent.click(link)
   expect(window.location.pathname).toBe('/guests')
-  expect(screen.getByText('Liste des invités')).toBeTruthy()
+  expect(screen.getByText('Liste des participants')).toBeTruthy()
   expect(globalThis.fetch).not.toHaveBeenCalled()
 })

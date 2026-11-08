@@ -56,7 +56,7 @@ export default function Guests() {
       status: 'confirmed'
     }
     await createGuest(guest)
-    alert('Invité ajouté !')
+    alert('Participant inscrit !')
     form.reset()
   }
 
@@ -89,14 +89,14 @@ export default function Guests() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <div className="page-title">Invités</div>
+      <div className="page-title">Participants</div>
       <div className="page-subtitle">
-        {guests.length} invité(s) gérés
+        {guests.length} participant(s) enregistré(s)
       </div>
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Ajouter un invité</h2>
+          <h2 className="card-title">Inscrire un participant</h2>
         </div>
         <div className="card-body">
           <form onSubmit={handleAddGuest}>
@@ -137,7 +137,7 @@ export default function Guests() {
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Liste des invités</h2>
+          <h2 className="card-title">Liste des participants</h2>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <input
               type="text"

@@ -25,14 +25,12 @@ import { setCurrentEvent } from './lib/currentEvent'
 function AppContent() {
   const { user, loading } = useAuth()
 
-  // Public registration page accessible without login via shareable link
+  // Lien public : les inscriptions sont réservées à l'administrateur et au gestionnaire
   if (typeof window !== 'undefined' && window.location.pathname === '/inscription-publique') {
-    const evParam = new URLSearchParams(window.location.search).get('event')
-    if (evParam) setCurrentEvent(Number(evParam))
     return (
       <Router>
         <Routes>
-          <Route path="/inscription-publique" element={<Inscription />} />
+          <Route path="/inscription-publique" element={<PublicRegistrationClosed />} />
         </Routes>
       </Router>
     )
@@ -191,6 +189,22 @@ function NotFound() {
       <h2 style={{ color: '#ffffff', margin: 0 }}>Page introuvable</h2>
       <p style={{ color: '#a0a0a0', margin: 0 }}>Cette page n'existe pas dans GALA MANAGER.</p>
       <a href="/dashboard" className="btn btn-gold">Retour au tableau de bord</a>
+    </div>
+  )
+}
+
+function PublicRegistrationClosed() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #010B26 0%, #011A43 55%, #010B26 100%)', padding: '1.5rem' }}>
+      <div style={{ background: '#ffffff', borderRadius: '16px', padding: '2rem', maxWidth: '460px', textAlign: 'center', boxShadow: '0 16px 48px rgba(0,0,0,0.35)' }}>
+        <img src="/logo.jpg" alt="EVEN MANAGER" style={{ width: '72px', height: '72px', borderRadius: '14px', marginBottom: '1rem' }} />
+        <h2 style={{ color: '#011A43', marginTop: 0 }}>Inscriptions fermées</h2>
+        <p style={{ color: '#5A6B8C', fontSize: '0.95rem' }}>
+          L'inscription des participants est réservée à l'<strong>administrateur</strong> et au <strong>gestionnaire</strong> de l'événement.
+        </p>
+        <p style={{ color: '#8A97B3', fontSize: '0.85rem' }}>Contactez l'organisation pour être inscrit.</p>
+        <a href="/" className="btn btn-gold" style={{ marginTop: '0.5rem' }}>Accéder à EVEN MANAGER</a>
+      </div>
     </div>
   )
 }

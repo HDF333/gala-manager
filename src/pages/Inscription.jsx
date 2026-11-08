@@ -5,9 +5,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { useSupabase } from '../hooks/useSupabase'
 import { supabase } from '../lib/supabase'
 import { getCurrentEvent } from '../lib/currentEvent'
+import { hasPerm } from '../lib/permissions'
 
 export default function Inscription() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { data: categories = [], error } = useSupabase('categories')
   const { data: guests = [], insert: insertGuest } = useSupabase('guests')
   const { data: tables = [] } = useSupabase('tables_placement')
@@ -24,6 +25,17 @@ export default function Inscription() {
   const [message, setMessage] = useState('')
   const [linkCopied, setLinkCopied] = useState(false)
   const [qrResult, setQrResult] = useState(null)
+
+  if (!hasPerm(profile, 'gerer_participants')) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="page-title">Inscription</div>
+        <div className="alert alert-danger">
+          L'inscription des participants est réservée à l'administrateur et au gestionnaire. Demandez à l'administrateur de vous attribuer la permission « Inscriptions ».
+        </div>
+      </div>
+    )
+  }
 
   const eventId = getCurrentEvent()
   const publicLink = typeof window !== 'undefined'

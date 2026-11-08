@@ -25,12 +25,14 @@ import { setCurrentEvent } from './lib/currentEvent'
 function AppContent() {
   const { user, loading } = useAuth()
 
-  // Lien public : les inscriptions sont réservées à l'administrateur et au gestionnaire
+  // Lien public : tout participant peut s'inscrire lui-même (tickets choisis par le participant)
   if (typeof window !== 'undefined' && window.location.pathname === '/inscription-publique') {
+    const evParam = new URLSearchParams(window.location.search).get('event')
+    if (evParam) setCurrentEvent(Number(evParam))
     return (
       <Router>
         <Routes>
-          <Route path="/inscription-publique" element={<PublicRegistrationClosed />} />
+          <Route path="/inscription-publique" element={<PublicInscription />} />
         </Routes>
       </Router>
     )
@@ -191,6 +193,10 @@ function NotFound() {
       <a href="/dashboard" className="btn btn-gold">Retour au tableau de bord</a>
     </div>
   )
+}
+
+function PublicInscription() {
+  return <Inscription publicMode />
 }
 
 function PublicRegistrationClosed() {

@@ -7,9 +7,10 @@ import { supabase } from '../lib/supabase'
 import { getCurrentEvent } from '../lib/currentEvent'
 import { hasPerm } from '../lib/permissions'
 
-export default function Inscription() {
+export default function Inscription({ publicMode = false } = {}) {
   const { user, profile } = useAuth()
   const { data: categories = [], error } = useSupabase('categories')
+  const { data: eventsList = [] } = useSupabase('events')
   const { data: guests = [], insert: insertGuest } = useSupabase('guests')
   const { data: tables = [] } = useSupabase('tables_placement')
   const [form, setForm] = useState({
@@ -26,7 +27,7 @@ export default function Inscription() {
   const [linkCopied, setLinkCopied] = useState(false)
   const [qrResult, setQrResult] = useState(null)
 
-  if (!hasPerm(profile, 'gerer_participants')) {
+  if (!publicMode && !hasPerm(profile, 'gerer_participants')) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div className="page-title">Inscription</div>
@@ -37,7 +38,7 @@ export default function Inscription() {
     )
   }
 
-  const eventId = getCurrentEvent()
+  const eventId = getCurrentEvent() || (!publicMode ? null : (eventsList[0]?.id || null))
   const publicLink = typeof window !== 'undefined'
     ? window.location.origin + '/inscription-publique?event=' + (eventId || '')
     : '/inscription-publique?event=' + (eventId || '')
@@ -156,9 +157,11 @@ export default function Inscription() {
           </div>
         )}
         <p>Remplissez le formulaire ci-dessous pour vous inscrire au gala.</p>
-        <button type="button" className="btn btn-secondary btn-sm" onClick={copyPublicLink} style={{ marginTop: '0.5rem' }}>
-          🔗 {linkCopied ? 'Lien copié !' : 'Copier le lien d\'inscription publique'}
-        </button>
+        {!publicMode && (
+          <button type="button" className="btn btn-secondary btn-sm" onClick={copyPublicLink} style={{ marginTop: '0.5rem' }}>
+            🔗 {linkCopied ? 'Lien copié !' : 'Copier le lien d\'inscription publique'}
+          </button>
+        )}
         {qrResult && (
           <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(26,122,58,0.1)', border: '1px solid rgba(26,122,58,0.3)', borderRadius: '12px', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <img src={qrResult.imageUrl} alt="Votre QR Code" style={{ width: '140px', height: '140px', borderRadius: '8px', background: '#fff' }} />

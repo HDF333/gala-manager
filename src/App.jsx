@@ -41,7 +41,7 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0a0a0a', color: '#ffffff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#010B26', color: '#ffffff' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚜️</div>
           <p style={{ color: '#a0a0a0' }}>Chargement de EVEN MANAGER...</p>
@@ -107,7 +107,7 @@ function AuthPage() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a0f 50%, #0a0a0a 100%)', fontFamily: 'Segoe UI, system-ui, -apple-system, sans-serif' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'linear-gradient(135deg, #010B26 0%, #011A43 55%, #010B26 100%)', fontFamily: 'Segoe UI, system-ui, -apple-system, sans-serif' }}>
       <div style={{ textAlign: 'center', maxWidth: '400px', padding: '2rem' }}>
         <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #d4af37, #b8941f)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>
           ⚜️
@@ -133,10 +133,10 @@ function AuthPage() {
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem',
-                  background: '#1a1a1a',
-                  border: '1px solid #2a2a2a',
+                  background: '#ffffff',
+                  border: '1px solid #E3E9F7',
                   borderRadius: '8px',
-                  color: '#ffffff',
+                  color: '#16223F',
                   fontSize: '0.95rem'
                 }}
                 required
@@ -153,10 +153,10 @@ function AuthPage() {
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem',
-                  background: '#1a1a1a',
-                  border: '1px solid #2a2a2a',
+                  background: '#ffffff',
+                  border: '1px solid #E3E9F7',
                   borderRadius: '8px',
-                  color: '#ffffff',
+                  color: '#16223F',
                   fontSize: '0.95rem'
                 }}
                 required

@@ -41,6 +41,17 @@ function Layout({ children }) {
     }
   }, [events])
 
+  // Personnalisation automatique : appliquer la couleur de thème de l'événement actif
+  useEffect(() => {
+    const theme = activeEvent?.theme_color || '#d4af37'
+    document.documentElement.style.setProperty('--accent', theme)
+    document.documentElement.style.setProperty('--accent-soft', theme + '22')
+    return () => {
+      document.documentElement.style.setProperty('--accent', '#d4af37')
+      document.documentElement.style.setProperty('--accent-soft', '#FFF3CD')
+    }
+  }, [activeEvent?.id, activeEvent?.theme_color])
+
   const handleLogout = async () => {
     setLoggingOut(true)
     setLogoutError('')

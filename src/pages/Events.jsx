@@ -5,7 +5,16 @@ import { getCurrentEvent, setCurrentEvent } from '../lib/currentEvent'
 
 export default function Events() {
   const { data: events = [], update: updateEvent, del: deleteEvent, refetch } = useSupabase('events')
-  const [form, setForm] = useState({ name: '', date: '', venue: '', tables_count: 100, seats_per_table: 10, budget_recettes: '', budget_depenses: '' })
+  const EVENT_TYPES = [
+    { key: 'Gala', color: '#d4af37' },
+    { key: 'Mariage', color: '#e06a9f' },
+    { key: 'Anniversaire', color: '#7c5cf0' },
+    { key: 'Conférence', color: '#1a7ad4' },
+    { key: 'Soirée', color: '#e06a2f' },
+    { key: 'Séminaire', color: '#1a9a6a' },
+    { key: 'Autre', color: '#d4af37' },
+  ]
+  const [form, setForm] = useState({ name: '', date: '', venue: '', type: 'Gala', tables_count: 100, seats_per_table: 10, budget_recettes: '', budget_depenses: '' })
   const [editing, setEditing] = useState(null)
   const [message, setMessage] = useState('')
   const [creating, setCreating] = useState(false)
@@ -25,6 +34,10 @@ export default function Events() {
         p_budget_recettes: form.budget_recettes ? Number(form.budget_recettes) : null,
         p_budget_depenses: form.budget_depenses ? Number(form.budget_depenses) : null
       })
+      if (!error) {
+        const theme = EVENT_TYPES.find(t => t.key === form.type)?.color || '#d4af37'
+        await updateEvent(newId, { type: form.type, theme_color: theme })
+      }
       if (error) throw error
       setCurrentEvent(newId)
       setForm({ name: '', date: '', venue: '', tables_count: 100, seats_per_table: 10, budget_recettes: '', budget_depenses: '' })
@@ -45,6 +58,8 @@ export default function Events() {
         name: form.name,
         date: form.date || null,
         venue: form.venue || null,
+        type: form.type,
+        theme_color: EVENT_TYPES.find(t => t.key === form.type)?.color || '#d4af37',
         tables_count: Number(form.tables_count) || 100,
         seats_per_table: Number(form.seats_per_table) || 10,
         budget_recettes: form.budget_recettes ? Number(form.budget_recettes) : null,
@@ -102,6 +117,12 @@ export default function Events() {
               <input className="form-input" placeholder="Ex : Abidjan" value={form.venue} onChange={(e) => setForm({ ...form, venue: e.target.value })} />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Type d'événement *</label>
+              <select className="form-select" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                {EVENT_TYPES.map(t => <option key={t.key} value={t.key}>{t.key}</option>)}
+              </select>
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label>Nombre de tables</label>
               <input className="form-input" type="number" min="1" value={form.tables_count} onChange={(e) => setForm({ ...form, tables_count: e.target.value })} />
             </div>
@@ -138,6 +159,7 @@ export default function Events() {
             <thead>
               <tr style={{ background: '#141414', color: '#a0a0a0', fontWeight: '600' }}>
                 <th style={{ padding: '0.75rem' }}>Nom</th>
+                <th style={{ padding: '0.75rem' }}>Type</th>
                 <th style={{ padding: '0.75rem' }}>Date</th>
                 <th style={{ padding: '0.75rem' }}>Lieu</th>
                 <th style={{ padding: '0.75rem' }}>Tables</th>
@@ -152,6 +174,9 @@ export default function Events() {
                 <tr key={ev.id} style={{ borderBottom: '1px solid #2a2a2a', background: ev.id === current ? 'rgba(212,175,55,0.06)' : undefined }}>
                   <td style={{ padding: '0.75rem', fontWeight: '600' }}>
                     {ev.name} {ev.id === current && <span className="badge badge-gold">Actif</span>}
+                  </td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <span className="badge" style={{ background: ev.theme_color || '#d4af37', color: '#ffffff', borderRadius: '6px', padding: '0.2rem 0.6rem' }}>{ev.type || 'Gala'}</span>
                   </td>
                   <td style={{ padding: '0.75rem' }}>{ev.date || '-'}</td>
                   <td style={{ padding: '0.75rem' }}>{ev.venue || '-'}</td>
@@ -168,7 +193,7 @@ export default function Events() {
                     <button className="btn btn-gold btn-sm" style={{ marginRight: '0.5rem' }} onClick={() => setCurrentEvent(ev.id)}>
                       {ev.id === current ? '✓ En cours' : '▶ Utiliser'}
                     </button>
-                    <button className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }} onClick={() => { setEditing(ev.id); setForm({ name: ev.name, date: ev.date || '', venue: ev.venue || '', tables_count: ev.tables_count ?? 100, seats_per_table: ev.seats_per_table ?? 10, budget_recettes: ev.budget_recettes ?? '', budget_depenses: ev.budget_depenses ?? '' }) }}>
+                    <button className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }} onClick={() => { setEditing(ev.id); setForm({ name: ev.name, date: ev.date || '', venue: ev.venue || '', type: ev.type || 'Gala', tables_count: ev.tables_count ?? 100, seats_per_table: ev.seats_per_table ?? 10, budget_recettes: ev.budget_recettes ?? '', budget_depenses: ev.budget_depenses ?? '' }) }}>
                       ✏️ Modifier
                     </button>
                     <button className="btn btn-danger btn-sm" onClick={() => handleDelete(ev.id)}>

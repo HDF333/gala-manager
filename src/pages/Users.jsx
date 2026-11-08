@@ -205,7 +205,7 @@ export default function Users() {
           <h2 className="card-title">Créer un utilisateur</h2>
         </div>
         <div className="card-body">
-          <form onSubmit={createUser} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem', alignItems: 'end' }}>
+          <form id="create-user" onSubmit={createUser} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '0.75rem', alignItems: 'end' }}>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label>Nom complet *</label>
               <input className="form-input" value={userForm.full_name} onChange={(e) => setUserForm({ ...userForm, full_name: e.target.value })} required />

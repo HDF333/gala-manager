@@ -24,6 +24,23 @@ const navItems = [
   { path: '/qrcodes', label: 'QR Codes', icon: '📱', perm: 'gerer_evenements' },
 ]
 
+// Action "Nouveau" propre à chaque page du menu
+const QUICK_ACTIONS = {
+  '/dashboard': { label: 'Nouvelle inscription', selector: 'form' },
+  '/events': { label: 'Nouvel événement', selector: 'form' },
+  '/guests': { label: 'Nouvel invité', selector: 'form' },
+  '/tickets': { label: 'Nouveau billet', selector: 'form' },
+  '/inscription': { label: 'Nouvelle inscription', selector: 'form' },
+  '/administration': { label: 'Nouvelle catégorie', selector: 'form' },
+  '/users': { label: 'Nouvel utilisateur', selector: '#create-user' },
+  '/sponsors': { label: 'Nouveau sponsor', selector: 'form' },
+  '/finances': { label: 'Nouvelle recette', selector: 'form' },
+  '/expenses': { label: 'Nouvelle dépense', selector: 'form' },
+  '/program': { label: 'Nouvel élément', selector: 'form' },
+  '/committee': { label: 'Nouveau membre', selector: 'form' },
+  '/qrcodes': { label: 'Générer un QR code', selector: 'select' },
+}
+
 const hasPerm = (profile, key) => {
   if (!profile) return false
   if (profile.role === 'Administrateur') return true
@@ -35,12 +52,24 @@ function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
   const { user, logout, profile } = useAuth()
+  const location = useLocation()
   const { data: events = [] } = useSupabase('events')
   const activeEvent = events.find(e => e.id === getCurrentEvent())
   const visibleNav = navItems.filter(item => !item.perm || hasPerm(profile, item.perm))
+  const quickAction = QUICK_ACTIONS[location.pathname]
+
+  const handleQuickAction = () => {
+    if (!quickAction) return
+    setQuickOpen(false)
+    const target = document.querySelector(quickAction.selector)
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const field = target.querySelector('input, select, textarea') || target
+      setTimeout(() => { try { field.focus({ preventScroll: true }) } catch { /* ignore */ } }, 350)
+    }
+  }
   const [logoutError, setLogoutError] = useState('')
   const [loggingOut, setLoggingOut] = useState(false)
-  const location = useLocation()
 
   // Par défaut, utiliser le premier événement si aucun n'est sélectionné
   useEffect(() => {
@@ -127,18 +156,10 @@ function Layout({ children }) {
             <h1 className="header-title">{activeEvent ? activeEvent.name : 'EVEN MANAGER'}</h1>
           </div>
           <div className="header-right" style={{ position: 'relative' }}>
-            <button className="btn btn-gold btn-sm" onClick={() => setQuickOpen(!quickOpen)}>
-              ➕ Nouveau
-            </button>
-            {quickOpen && (
-              <div style={{ position: 'absolute', right: 0, top: '42px', background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: '10px', padding: '0.5rem', zIndex: 300, minWidth: '220px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
-                <Link to="/events" onClick={() => setQuickOpen(false)} style={{ display: 'block', padding: '0.5rem 0.75rem', color: '#ffffff', borderRadius: '6px', fontSize: '0.9rem' }}>🎭 Nouvel événement</Link>
-                <Link to="/guests" onClick={() => setQuickOpen(false)} style={{ display: 'block', padding: '0.5rem 0.75rem', color: '#ffffff', borderRadius: '6px', fontSize: '0.9rem' }}>👥 Nouvel invité</Link>
-                <Link to="/tickets" onClick={() => setQuickOpen(false)} style={{ display: 'block', padding: '0.5rem 0.75rem', color: '#ffffff', borderRadius: '6px', fontSize: '0.9rem' }}>🎫 Nouveau billet</Link>
-                <Link to="/inscription" onClick={() => setQuickOpen(false)} style={{ display: 'block', padding: '0.5rem 0.75rem', color: '#ffffff', borderRadius: '6px', fontSize: '0.9rem' }}>📝 Nouvelle inscription</Link>
-                <Link to="/expenses" onClick={() => setQuickOpen(false)} style={{ display: 'block', padding: '0.5rem 0.75rem', color: '#ffffff', borderRadius: '6px', fontSize: '0.9rem' }}>💸 Nouvelle dépense</Link>
-                <Link to="/finances" onClick={() => setQuickOpen(false)} style={{ display: 'block', padding: '0.5rem 0.75rem', color: '#ffffff', borderRadius: '6px', fontSize: '0.9rem' }}>💰 Nouvelle recette</Link>
-              </div>
+            {quickAction && (
+              <button className="btn btn-gold btn-sm" onClick={handleQuickAction}>
+                ➕ {quickAction.label}
+              </button>
             )}
           </div>
         </header>

@@ -68,7 +68,7 @@ function Layout({ children }) {
     <div className="app">
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">⚜️</div>
+          <img src="/logo.jpg" alt="EVEN MANAGER" className="sidebar-logo-icon" style={{ objectFit: 'cover', padding: 0 }} />
           <span className="sidebar-logo-text">EVEN MANAGER</span>
         </div>
         <nav className="sidebar-nav">

@@ -43,7 +43,7 @@ function AppContent() {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#010B26', color: '#ffffff' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚜️</div>
+          <img src="/logo.jpg" alt="EVEN MANAGER" style={{ width: '96px', height: '96px', borderRadius: '16px', marginBottom: '1rem' }} />
           <p style={{ color: '#a0a0a0' }}>Chargement de EVEN MANAGER...</p>
         </div>
       </div>
@@ -109,9 +109,7 @@ function AuthPage() {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'linear-gradient(135deg, #010B26 0%, #011A43 55%, #010B26 100%)', fontFamily: 'Segoe UI, system-ui, -apple-system, sans-serif' }}>
       <div style={{ textAlign: 'center', maxWidth: '400px', padding: '2rem' }}>
-        <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #d4af37, #b8941f)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: '2rem' }}>
-          ⚜️
-        </div>
+        <img src="/logo.jpg" alt="EVEN MANAGER" style={{ width: '96px', height: '96px', borderRadius: '20px', margin: '0 auto 1.5rem', display: 'block', boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }} />
         <div>
           <h1 style={{ color: '#ffffff', marginBottom: '0.5rem' }}>EVEN MANAGER</h1>
           <p style={{ color: '#a0a0a0', fontSize: '0.9rem', marginBottom: '1.5rem' }}>

@@ -1,81 +1,123 @@
-import React from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import React, { useState } from 'react'
+import { useSupabase } from '../hooks/useSupabase'
+import { downloadCSV } from '../utils/export'
+import { parseCSVFile, triggerFileInput } from '../utils/import'
 
 export default function Program() {
-  const { user } = useAuth()
+  const { data: items = [], insert: addItem, update: updateItem, del: deleteItem } = useSupabase('program_items')
+  const [form, setForm] = useState({ title: '', start_time: '', description: '' })
+  const [editing, setEditing] = useState(null)
+  const [message, setMessage] = useState('')
 
-  const sections = [
-    { id: 1, name: 'Accueil & Apéritif', description: 'Bienvenue des invités, apéritif léger', sort_order: 1, status: 'active' },
-    { id: 2, name: 'Remise des gages', description: 'Remise des dons et présentation des sponsors', sort_order: 2, status: 'active' },
-    { id: 3, name: 'Défilé de soie', description: 'Défilé glamour avec mode exclusive', sort_order: 3, status: 'active' },
-    { id: 4, name: 'Dîner en famille', description: 'Repas sommelier servi aux invités', sort_order: 4, status: 'active' },
-    { id: 5, name: 'Bain de soie', description: 'Permanence de coiffure et maquillage', sort_order: 5, status: 'active' },
-    { id: 6, name: 'Soirée dance', description: 'Bal scène avec DJ et musique', sort_order: 6, status: 'active' },
-    { id: 7, name: 'Clôture & Ballon de noël', description: 'Moment clémente et célébration', sort_order: 7, status: 'active' },
-  ]
+  const sorted = [...items].sort((a, b) => (a.start_time || '').localeCompare(b.start_time || ''))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setMessage('')
+    try {
+      if (editing) {
+        await updateItem(editing, form)
+        setMessage('Élément du programme modifié')
+      } else {
+        await addItem(form)
+        setMessage('Élément du programme ajouté')
+      }
+      setEditing(null)
+      setForm({ title: '', start_time: '', description: '' })
+    } catch (err) {
+      setMessage('Erreur : ' + (err.message || 'Opération impossible'))
+    }
+  }
+
+  const exportCSV = () => {
+    downloadCSV('programme.csv', sorted.map(it => ({ Heure: it.start_time, Titre: it.title, Description: it.description })))
+  }
+
+  const importCSV = () => {
+    triggerFileInput(async (file) => {
+      setMessage('')
+      try {
+        const rows = await parseCSVFile(file)
+        let ok = 0
+        for (const r of rows) {
+          if (!r.titre) continue
+          await addItem({ title: r.titre, start_time: r.heure || null, description: r.description || null })
+          ok++
+        }
+        setMessage(ok + ' élément(s) importé(s)')
+      } catch (err) {
+        setMessage('Erreur : ' + (err.message || 'Import impossible'))
+      }
+    })
+  }
+
+  const remove = async (id) => {
+    if (confirm('Supprimer cet élément du programme ?')) {
+      try { await deleteItem(id) } catch (err) { setMessage('Erreur : ' + err.message) }
+    }
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div className="page-title">Programme</div>
-      <div className="page-subtitle">Planification de la soirée</div>
+      <div className="page-subtitle">Programme de l'événement actif</div>
+
+      {message && (
+        <div style={{ padding: '1rem', borderRadius: '8px', background: message.includes('Erreur') ? 'rgba(184,26,26,0.1)' : 'rgba(26,122,58,0.1)', color: message.includes('Erreur') ? '#b81a1a' : '#1a7a3a' }}>
+          {message}
+        </div>
+      )}
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Ajouter une section</h2>
+          <h2 className="card-title">{editing ? 'Modifier' : 'Ajouter un élément'}</h2>
         </div>
         <div className="card-body">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-            <div className="form-group">
-              <label>Nom de la section</label>
-              <input className="form-input" placeholder="Ex: Accueil & Apéritif" />
+          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: '0.75rem', alignItems: 'end' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Titre *</label>
+              <input className="form-input" placeholder="Ex : Discours d'ouverture" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Heure</label>
+              <input className="form-input" placeholder="Ex : 19:00" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
               <label>Description</label>
-              <input className="form-input" placeholder="Description courte" />
+              <input className="form-input" placeholder="Détails..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
-            <div className="form-group">
-              <label>Ordre</label>
-              <input className="form-input" type="number" placeholder="1" />
-            </div>
-          </div>
-          <button className="btn btn-primary" style={{ marginTop: '1rem' }}>Ajouter</button>
+            <button type="submit" className="btn btn-primary">{editing ? 'Mettre à jour' : 'Ajouter'}</button>
+          </form>
+          {editing && (
+            <button className="btn btn-secondary btn-sm" style={{ marginTop: '0.5rem' }} onClick={() => { setEditing(null); setForm({ title: '', start_time: '', description: '' }) }}>Annuler</button>
+          )}
         </div>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Programme de la soirée</h2>
+          <h2 className="card-title">Déroulé de la soirée</h2>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn btn-secondary btn-sm" onClick={exportCSV}>⬇️ Exporter</button>
+            <button className="btn btn-secondary btn-sm" onClick={importCSV}>⬆️ Importer CSV</button>
+          </div>
         </div>
-        <div className="card-body" style={{ overflowX: 'auto', borderRadius: '8px', border: '1px solid #2a2a2a' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-            <thead>
-              <tr style={{ background: '#141414', color: '#a0a0a0', fontWeight: '600' }}>
-                <th style={{ padding: '0.85rem' }}>N°</th>
-                <th style={{ padding: '0.85rem' }}>Nom</th>
-                <th style={{ padding: '0.85rem' }}>Description</th>
-                <th style={{ padding: '0.85rem' }}>Ordre</th>
-                <th style={{ padding: '0.85rem' }}>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sections.map((s) => (
-                <tr key={s.id} style={{ borderBottom: '1px solid #2a2a2a' }}>
-                  <td style={{ padding: '0.85rem' }}>{s.id}</td>
-                  <td style={{ padding: '0.85rem', fontWeight: '600' }}>{s.name}</td>
-                  <td style={{ padding: '0.85rem' }}>{s.description}</td>
-                  <td style={{ padding: '0.85rem' }}>{s.sort_order}</td>
-                  <td style={{ padding: '0.85rem' }}>
-                    <span className={`badge ${s.status === 'active' ? 'badge-success' : 'badge-warning'}`}>
-                      {s.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card-body">
+          {sorted.length === 0 && <p style={{ color: '#6a6a6a' }}>Aucun élément. Ajoutez le programme ci-dessus.</p>}
+          {sorted.map((it) => (
+            <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: '#1a1a1a', borderRadius: '8px', border: '1px solid #2a2a2a', marginBottom: '0.5rem' }}>
+              <div>
+                <strong style={{ color: '#ffffff' }}>{it.start_time ? '🕐 ' + it.start_time + ' — ' : ''}{it.title}</strong>
+                {it.description && <p style={{ color: '#a0a0a0', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>{it.description}</p>}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => { setEditing(it.id); setForm({ title: it.title, start_time: it.start_time || '', description: it.description || '' }) }}>✏️</button>
+                <button className="btn btn-danger btn-sm" onClick={() => remove(it.id)}>🗑️</button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   )
 }
-

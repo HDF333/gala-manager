@@ -1,8 +1,24 @@
 import React from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { useSupabase } from '../hooks/useSupabase'
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { data: guests = [] } = useSupabase('guests')
+  const { data: tickets = [] } = useSupabase('tickets')
+  const { data: tables = [] } = useSupabase('tables_placement')
+
+  const totalRevenue = tickets
+    .filter(t => t.status === 'active' || t.status === 'confirmed')
+    .reduce((sum, t) => sum + (t.total || 0), 0)
+  const pendingRevenue = tickets
+    .filter(t => t.status === 'pending')
+    .reduce((sum, t) => sum + (t.total || 0), 0)
+  const confirmedGuests = guests.filter(g => g.status === 'confirmed').length
+  const pendingGuests = guests.filter(g => g.status === 'pending').length
+  const seatsTaken = guests.reduce((sum, g) => sum + (g.people_count || 1), 0)
+  const totalSeats = tables.reduce((sum, t) => sum + (t.capacity || 0), 0)
+  const occupancy = totalSeats > 0 ? Math.round((seatsTaken / totalSeats) * 100) : 0
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -13,18 +29,18 @@ export default function Dashboard() {
         <div className="kpi-card">
           <div className="kpi-icon revenue">💰</div>
           <div className="kpi-content">
-            <div className="kpi-label">Recettes totales</div>
-            <div className="kpi-value">₣ 15.279.941</div>
-            <div className="kpi-change up">+12.5% vs mois dernier</div>
+            <div className="kpi-label">Recettes encaissées</div>
+            <div className="kpi-value">₣ {totalRevenue.toLocaleString('fr-FR')}</div>
+            <div className="kpi-change up">{tickets.filter(t => t.status === 'active').length} billet(s) actif(s)</div>
           </div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-icon result">📊</div>
           <div className="kpi-content">
-            <div className="kpi-label">Résultat net</div>
-            <div className="kpi-value" style={{ color: '#1a7a3a' }}>₣ 3.200.000</div>
-            <div className="kpi-change up">+8.2% vs mois dernier</div>
+            <div className="kpi-label">Recettes en attente</div>
+            <div className="kpi-value" style={{ color: '#c99700' }}>₣ {pendingRevenue.toLocaleString('fr-FR')}</div>
+            <div className="kpi-change up">{tickets.filter(t => t.status === 'pending').length} billet(s) à encaisser</div>
           </div>
         </div>
 
@@ -32,17 +48,17 @@ export default function Dashboard() {
           <div className="kpi-icon tuition">👥</div>
           <div className="kpi-content">
             <div className="kpi-label">Invités confirmés</div>
-            <div className="kpi-value">1.240</div>
-            <div className="kpi-change">+45 ce mois</div>
+            <div className="kpi-value">{confirmedGuests}</div>
+            <div className="kpi-change">{pendingGuests} en attente</div>
           </div>
         </div>
 
         <div className="kpi-card">
           <div className="kpi-icon dashboard">📋</div>
           <div className="kpi-content">
-            <div className="kpi-label">Taux de réalisation</div>
-            <div className="kpi-value">68%</div>
-            <div className="kpi-change">Cible 75%</div>
+            <div className="kpi-label">Occupation des tables</div>
+            <div className="kpi-value">{occupancy}%</div>
+            <div className="kpi-change">{seatsTaken} / {totalSeats} places</div>
           </div>
         </div>
       </div>
@@ -55,36 +71,14 @@ export default function Dashboard() {
         <div className="card-body">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <p><strong>Recettes prévues :</strong> <span style={{ color: '#d4af37', fontWeight: '600' }}>₣ 12.500.000</span></p>
-              <p><strong>Recettes encaissées :</strong> <span style={{ color: '#1a7a3a', fontWeight: '600' }}>₣ 9.850.000</span></p>
-              <p><strong>Restant à encaisser :</strong> <span style={{ color: '#c99700', fontWeight: '600' }}>₣ 2.650.000</span></p>
+              <p><strong>Recettes totales (tous billets) :</strong> <span style={{ color: '#d4af37', fontWeight: '600' }}>₣ {(totalRevenue + pendingRevenue).toLocaleString('fr-FR')}</span></p>
+              <p><strong>Recettes encaissées :</strong> <span style={{ color: '#1a7a3a', fontWeight: '600' }}>₣ {totalRevenue.toLocaleString('fr-FR')}</span></p>
+              <p><strong>Restant à encaisser :</strong> <span style={{ color: '#c99700', fontWeight: '600' }}>₣ {pendingRevenue.toLocaleString('fr-FR')}</span></p>
             </div>
             <div>
-              <p><strong>Dépenses budgétisées :</strong> <span style={{ color: '#b81a1a', fontWeight: '600' }}>₣ 9.300.000</span></p>
-              <p><strong>Dépenses engagées :</strong> <span style={{ color: '#c99700', fontWeight: '600' }}>₣ 6.450.000</span></p>
-              <p><strong>Dépenses payées :</strong> <span style={{ color: '#1a7a3a', fontWeight: '600' }}>₣ 5.920.000</span></p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Répartition par activité</h2>
-        </div>
-        <div className="card-body">
-          <div style={{ display: 'flex', height: '300px', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ width: '40%', background: '#d4af37', color: '#0a0a0a', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', fontWeight: '600' }}>
-              CLINKER<br/><span style={{ fontSize: '0.85rem' }}>38%</span>
-            </div>
-            <div style={{ width: '25%', background: '#1a7a3a', color: '#0a0a0a', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', fontWeight: '600' }}>
-              BLE<br/><span style={{ fontSize: '0.85rem' }}>25%</span>
-            </div>
-            <div style={{ width: '20%', background: '#c99700', color: '#0a0a0a', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', fontWeight: '600' }}>
-              SABLE/GRAVIER<br/><span style={{ fontSize: '0.85rem' }}>20%</span>
-            </div>
-            <div style={{ width: '15%', background: '#b81a1a', color: '#0a0a0a', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', fontWeight: '600' }}>
-              AUTRES<br/><span style={{ fontSize: '0.85rem' }}>17%</span>
+              <p><strong>Billets actifs :</strong> <span style={{ color: '#1a7a3a', fontWeight: '600' }}>{tickets.filter(t => t.status === 'active').length}</span></p>
+              <p><strong>Billets en attente :</strong> <span style={{ color: '#c99700', fontWeight: '600' }}>{tickets.filter(t => t.status === 'pending').length}</span></p>
+              <p><strong>Invitations confirmées :</strong> <span style={{ color: '#d4af37', fontWeight: '600' }}>{confirmedGuests} invité(s) / {seatsTaken} personne(s)</span></p>
             </div>
           </div>
         </div>

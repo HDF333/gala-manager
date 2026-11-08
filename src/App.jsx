@@ -18,16 +18,33 @@ import Reports from './pages/Reports'
 import Inscription from './pages/Inscription'
 import Administration from './pages/Administration'
 import QRCodes from './pages/QRCodes'
+import Events from './pages/Events'
+import Scan from './pages/Scan'
+import Users from './pages/Users'
+import { setCurrentEvent } from './lib/currentEvent'
 
 function AppContent() {
   const { user, loading } = useAuth()
+
+  // Public registration page accessible without login via shareable link
+  if (typeof window !== 'undefined' && window.location.pathname === '/inscription-publique') {
+    const evParam = new URLSearchParams(window.location.search).get('event')
+    if (evParam) setCurrentEvent(Number(evParam))
+    return (
+      <Router>
+        <Routes>
+          <Route path="/inscription-publique" element={<Inscription />} />
+        </Routes>
+      </Router>
+    )
+  }
 
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0a0a0a', color: '#ffffff' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚜️</div>
-          <p style={{ color: '#a0a0a0' }}>Chargement de GALA MANAGER...</p>
+          <p style={{ color: '#a0a0a0' }}>Chargement de EVEN MANAGER...</p>
         </div>
       </div>
     )
@@ -56,6 +73,10 @@ function AppContent() {
           <Route path="/inscription" element={<Inscription />} />
           <Route path="/administration" element={<Administration />} />
           <Route path="/qrcodes" element={<QRCodes />} />
+          <Route path="/events" element={<Events />} />
+          <Route path="/scan" element={<Scan />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>
     </Router>
@@ -63,7 +84,7 @@ function AppContent() {
 }
 
 function AuthPage() {
-  const { login, logout } = useAuth()
+  const { login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -75,35 +96,11 @@ function AuthPage() {
     setLoading(true)
 
     try {
-      const res = await fetch('https://sozalihzdiatdoocxybs.supabase.co/rest/v1/auth/users', {
-        method: 'POST',
-        headers: {
-          'apikey': 'eyJhbG...5LiA',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password
-        })
-      })
-
-      const data = await res.json()
-
-      if (data.error) {
-        setError(data.error.message || 'Erreur de connexion')
-      } else {
-        if (data.user) {
-          login({
-            id: data.user.id,
-            email: data.user.email,
-            first_name: data.user.user_metadata?.full_name || 'Invité',
-            last_name: ''
-          })
-          alert('Connexion réussie !')
-        }
-      }
+      await login({ email: email.trim(), password })
     } catch (err) {
-      setError('Erreur de connexion au serveur')
+      setError(err.code === 'invalid_credentials'
+        ? 'Email ou mot de passe incorrect. Utilisez un compte de l’application, pas celui du tableau de bord Supabase.'
+        : err.message || 'Erreur de connexion au serveur')
     } finally {
       setLoading(false)
     }
@@ -116,13 +113,13 @@ function AuthPage() {
           ⚜️
         </div>
         <div>
-          <h1 style={{ color: '#ffffff', marginBottom: '0.5rem' }}>GALA MANAGER</h1>
+          <h1 style={{ color: '#ffffff', marginBottom: '0.5rem' }}>EVEN MANAGER</h1>
           <p style={{ color: '#a0a0a0', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
             Connexion au dîner-gala
           </p>
           <form onSubmit={handleSubmit}>
             {error && (
-              <div style={{ color: '#b81a1a', background: 'rgba(184,26,26,0.1)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid rgba(184,26,26,0.3)' }}>
+              <div role="alert" style={{ color: '#b81a1a', background: 'rgba(184,26,26,0.1)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', border: '1px solid rgba(184,26,26,0.3)' }}>
                 {error}
               </div>
             )}
@@ -187,6 +184,17 @@ function AuthPage() {
           </form>
         </div>
       </div>
+    </div>
+  )
+}
+
+function NotFound() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: '1rem' }}>
+      <div style={{ fontSize: '3rem' }}>🚫</div>
+      <h2 style={{ color: '#ffffff', margin: 0 }}>Page introuvable</h2>
+      <p style={{ color: '#a0a0a0', margin: 0 }}>Cette page n'existe pas dans GALA MANAGER.</p>
+      <a href="/dashboard" className="btn btn-gold">Retour au tableau de bord</a>
     </div>
   )
 }

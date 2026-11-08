@@ -1,10 +1,15 @@
 import React, { useState } from 'react'
+import QRCode from 'qrcode'
 import { useAuth } from '../contexts/AuthContext'
 import { useSupabase } from '../hooks/useSupabase'
+import { supabase } from '../lib/supabase'
+import { getCurrentEvent } from '../lib/currentEvent'
 
 export default function Inscription() {
   const { user } = useAuth()
-  const { data: categories = [], error, refetch } = useSupabase('categories')
+  const { data: categories = [], error } = useSupabase('categories')
+  const { data: guests = [], insert: insertGuest } = useSupabase('guests')
+  const { data: tables = [] } = useSupabase('tables_placement')
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
@@ -16,10 +21,29 @@ export default function Inscription() {
   })
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
+  const [linkCopied, setLinkCopied] = useState(false)
+  const [qrResult, setQrResult] = useState(null)
+
+  const eventId = getCurrentEvent()
+  const publicLink = typeof window !== 'undefined'
+    ? window.location.origin + '/inscription-publique?event=' + (eventId || '')
+    : '/inscription-publique?event=' + (eventId || '')
+
+  const copyPublicLink = async () => {
+    try {
+      await navigator.clipboard.writeText(publicLink)
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 3000)
+    } catch {
+      setMessage('Lien : ' + publicLink)
+    }
+  }
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
   }
+
+  const selectedCategory = categories.find(c => c.id === Number(form.category_id))
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -27,31 +51,52 @@ export default function Inscription() {
     setMessage('')
 
     try {
-      const res = await fetch('http://localhost:54321/rest/v1/guests?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvemFsaWh6ZGlhdGRvb2N4eWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzIxMTcsImV4cCI6MjEwOTE0ODExN30.pMwkh3DbjEUPtWtyVpmSx7Hd4_R659zp3ohaRqO5LiA', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvemFsaWh6ZGlhdGRvb2N4eWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzIxMTcsImV4cCI6MjEwOTE0ODExN30.pMwkh3DbjEUPtWtyVpmSx7Hd4_R659zp3ohaRqO5LiA'
-        },
-        body: JSON.stringify({
+      if (!selectedCategory) {
+        throw new Error('Veuillez sélectionner une catégorie')
+      }
+      if (!eventId) {
+        throw new Error('Aucun événement actif. Choisissez un événement dans le menu Événements.')
+      }
+      const eventName = (await supabase.from('events').select('name').eq('id', eventId).single()).data?.name || 'Événement'
+      // QR unique et personnalisé avec toutes les informations
+      const qrPayload = JSON.stringify({
+        code: '',
+        first_name: form.first_name,
+        last_name: form.last_name,
+        email: form.email,
+        phone: form.phone,
+        tribu: form.company,
+        category: selectedCategory.name,
+        people_count: selectedCategory.seats,
+        event_name: eventName
+      })
+      const imageUrl = await QRCode.toDataURL(qrPayload, { width: 320, margin: 1, errorCorrectionLevel: 'M' })
+      const { data: reg, error: rpcError } = await supabase.rpc('register_guest', {
+        p_payload: {
+          event_id: eventId,
+          category_id: selectedCategory.id,
+          people_count: selectedCategory.seats,
           first_name: form.first_name,
           last_name: form.last_name,
           email: form.email,
           phone: form.phone,
           company: form.company,
-          category_id: form.category_id,
-          status: 'pending'
-        })
+          notes: form.notes,
+          image_url: imageUrl
+        }
       })
-      const data = await res.json()
-      if (data.error) {
-        setMessage('Erreur: ' + data.error.message)
-      } else {
-        setMessage('Inscription envoyée avec succès ! L\'admin validera prochainement votre inscription.')
-        setForm({ first_name: '', last_name: '', email: '', phone: '', company: '', category_id: '', notes: '' })
-      }
+      if (rpcError) throw rpcError
+      if (!reg || !reg.ok) throw new Error(reg?.message || 'Inscription impossible')
+      setQrResult({
+        imageUrl: reg.imageUrl,
+        ticketCode: reg.ticket_code,
+        tableNumber: reg.table_number,
+        category: reg.category
+      })
+      setMessage('Inscription envoyée avec succès ! Billet ' + selectedCategory.name + ' créé (' + Number(selectedCategory.price).toLocaleString('fr-FR') + ' FCFA). Table attribuée : ' + selectedCategory.name + ' n°' + String(reg.table_number).padStart(3, '0') + '.')
+      setForm({ first_name: '', last_name: '', email: '', phone: '', company: '', category_id: '', notes: '' })
     } catch (err) {
-      setMessage('Erreur de connexion au serveur')
+      setMessage('Erreur : ' + (err.message || 'Erreur de connexion au serveur'))
     } finally {
       setSubmitting(false)
     }
@@ -73,6 +118,23 @@ export default function Inscription() {
           </div>
         )}
         <p>Remplissez le formulaire ci-dessous pour vous inscrire au gala.</p>
+        <button type="button" className="btn btn-secondary btn-sm" onClick={copyPublicLink} style={{ marginTop: '0.5rem' }}>
+          🔗 {linkCopied ? 'Lien copié !' : 'Copier le lien d\'inscription publique'}
+        </button>
+        {qrResult && (
+          <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(26,122,58,0.1)', border: '1px solid rgba(26,122,58,0.3)', borderRadius: '12px', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <img src={qrResult.imageUrl} alt="Votre QR Code" style={{ width: '140px', height: '140px', borderRadius: '8px', background: '#fff' }} />
+            <div>
+              <strong style={{ color: '#1a7a3a' }}>🎫 Votre QR Code personnel</strong>
+              <p style={{ color: '#a0a0a0', fontSize: '0.85rem', margin: '0.35rem 0' }}>
+                Billet : {qrResult.ticketCode}<br/>
+                Table : {qrResult.category} n°{String(qrResult.tableNumber).padStart(3, '0')}<br/>
+                Conservez-le : il sera scanné à l'entrée.
+              </p>
+              <a className="btn btn-gold btn-sm" href={qrResult.imageUrl} download={'QR-' + qrResult.ticketCode + '.png'}>⬇️ Télécharger mon QR Code</a>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card">
@@ -129,12 +191,12 @@ export default function Inscription() {
                 />
               </div>
               <div className="form-group">
-                <label>Société / Entreprise</label>
+                <label>Tribu</label>
                 <input
                   name="company"
                   type="text"
                   className="form-input"
-                  placeholder="Société"
+                  placeholder="Nom de la tribu"
                   value={form.company}
                   onChange={handleChange}
                 />
@@ -149,9 +211,9 @@ export default function Inscription() {
                   required
                 >
                   <option value="">Sélectionnez une catégorie</option>
-                  {categories.map((cat) => (
+                  {categories.filter(c => !c.admin_only).map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.name} ({cat.price} FCFA)
+                      {cat.name} — {Number(cat.price).toLocaleString('fr-FR')} FCFA{cat.seats > 1 ? ' (2 personnes)' : ''}
                     </option>
                   ))}
                 </select>
@@ -180,4 +242,3 @@ export default function Inscription() {
     </div>
   )
 }
-

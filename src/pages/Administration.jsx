@@ -1,18 +1,66 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useSupabase } from '../hooks/useSupabase'
+import { supabase } from '../lib/supabase'
 
 export default function Administration() {
   const { user } = useAuth()
-  const { data: guests = [], refetch, error } = useSupabase('guests')
+  const { data: guests = [], refetch, error, update: updateGuest } = useSupabase('guests')
   const { data: tickets = [], refetch: refetchTickets } = useSupabase('tickets')
-  const { data: categories = [] } = useSupabase('categories')
-  const { data: qrcodes = [], refetch: refetchQRCodes } = useSupabase('qrcodes')
+  const { data: categories = [], insert: insertCategory, update: updateCategory, del: deleteCategory, refetch: refetchCategories } = useSupabase('categories')
+  const { data: tables = [] } = useSupabase('tables_placement')
+  const { data: qrcodes = [], refetch: refetchQRCodes, del: removeQRCode } = useSupabase('qrcodes')
 
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('pending')
   const [message, setMessage] = useState('')
+  const [catForm, setCatForm] = useState({ name: '', price: '', seats: 1, admin_only: false })
+  const [editingCat, setEditingCat] = useState(null)
+
+  const saveCategory = async (e) => {
+    e.preventDefault()
+    try {
+      const payload = {
+        name: catForm.name,
+        price: Number(catForm.price) || 0,
+        seats: Number(catForm.seats) || 1,
+        admin_only: catForm.admin_only
+      }
+      if (editingCat) {
+        await updateCategory(editingCat, payload)
+        setMessage('Catégorie modifiée avec succès')
+      } else {
+        await insertCategory({ ...payload, code: 'CAT-' + Date.now() })
+        setMessage('Catégorie ajoutée avec succès')
+      }
+      setEditingCat(null)
+      setCatForm({ name: '', price: '', seats: 1, admin_only: false })
+      refetchCategories()
+    } catch (err) {
+      setMessage('Erreur : ' + (err.message || 'Opération impossible'))
+    }
+  }
+
+  const removeCategory = async (id) => {
+    if (confirm('Supprimer cette catégorie ?')) {
+      try {
+        await deleteCategory(id)
+        setMessage('Catégorie supprimée')
+        refetchCategories()
+      } catch (err) {
+        setMessage('Erreur : ' + (err.message || 'Suppression impossible'))
+      }
+    }
+  }
+
+  const tableFor = (tableNumber) => {
+    if (!tableNumber) return '-'
+    const t = tables.find(tb => tb.id === tableNumber)
+    if (!t) return 'Table ' + tableNumber
+    const catName = t.category_id ? categories.find(c => c.id === t.category_id)?.name || '' : ''
+    return 'Table n°' + String(t.number || t.id).padStart(3, '0') + (catName ? ' (' + catName + ')' : '')
+  }
 
   const filteredGuests = guests.filter(g => {
     if (search && !g.first_name?.toLowerCase().includes(search.toLowerCase()) && !g.last_name?.toLowerCase().includes(search.toLowerCase())) {
@@ -29,53 +77,32 @@ export default function Administration() {
 
   const handleConfirm = async (guestId) => {
     try {
-      const res = await fetch('http://localhost:54321/rest/v1/guests?id=eq.' + guestId, {
-        method: 'Update',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvemFsaWh6ZGlhdGRvb2N4eWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzIxMTcsImV4cCI6MjEwOTE0ODExN30.pMwkh3DbjEUPtWtyVpmSx7Hd4_R659zp3ohaRqO5LiA'
-        },
-        body: JSON.stringify({
-          status: 'confirmed',
-          confirmation_date: new Date().toISOString()
-        })
+      await updateGuest(guestId, {
+        status: 'confirmed',
+        confirmation_date: new Date().toISOString()
       })
-      if (res.ok) {
-        setMessage('Inscription validée avec succès !')
-        refetch()
-        refetchTickets()
-      } else {
-        const err = await res.json()
-        setMessage('Erreur: ' + err.message)
-      }
+      // Activer le billet lié à cette catégorie
+      await supabase.rpc('activate_tickets_for_guest', { p_buyer: guestId })
+      setMessage('Inscription validée avec succès ! Billet activé.')
+      refetch()
+      refetchTickets()
     } catch (err) {
-      setMessage('Erreur lors de la validation')
+      setMessage('Erreur : ' + (err.message || 'Erreur lors de la validation'))
     }
   }
 
   const handleReject = async (guestId) => {
     if (confirm('Êtes-vous sûr de vouloir rejeter cette inscription ?')) {
       try {
-        const res = await fetch('http://localhost:54321/rest/v1/guests?id=eq.' + guestId, {
-          method: 'Update',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvemFsaWh6ZGlhdGRvb2N4eWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzIxMTcsImV4cCI6MjEwOTE0ODExN30.pMwkh3DbjEUPtWtyVpmSx7Hd4_R659zp3ohaRqO5LiA'
-          },
-          body: JSON.stringify({
-            status: 'rejected',
-            confirmation_date: new Date().toISOString()
-          })
+        await updateGuest(guestId, {
+          status: 'rejected',
+          confirmation_date: new Date().toISOString()
         })
-        if (res.ok) {
-          setMessage('Inscription rejetée')
-          refetch()
-          refetchTickets()
-        } else {
-          setMessage('Erreur lors du rejet')
-        }
+        setMessage('Inscription rejetée')
+        refetch()
+        refetchTickets()
       } catch (err) {
-        setMessage('Erreur lors du rejet')
+        setMessage('Erreur : ' + (err.message || 'Erreur lors du rejet'))
       }
     }
   }
@@ -83,22 +110,11 @@ export default function Administration() {
   const handleDeleteQR = async (qrId) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce QR Code ?')) {
       try {
-        const res = await fetch('http://localhost:54321/rest/v1/qrcodes?id=eq.' + qrId, {
-          method: 'Delete',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvemFsaWh6ZGlhdGRvb2N4eWJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NzIxMTcsImV4cCI6MjEwOTE0ODExN30.pMwkh3DbjEUPtWtyVpmSx7Hd4_R659zp3ohaRqO5LiA'
-          }
-        })
-        if (res.ok) {
-          setMessage('QR Code supprimé avec succès')
-          refetchQRCodes()
-        } else {
-          const err = await res.json()
-          setMessage('Erreur: ' + err.message)
-        }
+        await removeQRCode(qrId)
+        setMessage('QR Code supprimé avec succès')
+        refetchQRCodes()
       } catch (err) {
-        setMessage('Erreur de connexion')
+        setMessage('Erreur : ' + (err.message || 'Erreur de connexion'))
       }
     }
   }
@@ -118,6 +134,73 @@ export default function Administration() {
           {message}
         </div>
       )}
+
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Gestion des catégories</h2>
+        </div>
+        <div className="card-body">
+          <form onSubmit={saveCategory} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: '0.75rem', alignItems: 'end', marginBottom: '1rem' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Nom</label>
+              <input className="form-input" placeholder="Ex : Premium Seul" value={catForm.name} onChange={(e) => setCatForm({ ...catForm, name: e.target.value })} required />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Prix (FCFA)</label>
+              <input className="form-input" type="number" placeholder="150000" value={catForm.price} onChange={(e) => setCatForm({ ...catForm, price: e.target.value })} required />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Personnes</label>
+              <select className="form-select" value={catForm.seats} onChange={(e) => setCatForm({ ...catForm, seats: Number(e.target.value) })}>
+                <option value={1}>1 personne</option>
+                <option value={2}>2 personnes (couple)</option>
+              </select>
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label>Réservé admin</label>
+              <select className="form-select" value={catForm.admin_only} onChange={(e) => setCatForm({ ...catForm, admin_only: e.target.value === 'true' })}>
+                <option value={false}>Non</option>
+                <option value={true}>Oui (attribué par l'admin)</option>
+              </select>
+            </div>
+            <button type="submit" className="btn btn-primary">{editingCat ? 'Mettre à jour' : 'Ajouter'}</button>
+          </form>
+          {editingCat && (
+            <button className="btn btn-secondary btn-sm" style={{ marginBottom: '0.75rem' }} onClick={() => { setEditingCat(null); setCatForm({ name: '', price: '', seats: 1, admin_only: false }) }}>
+              Annuler la modification
+            </button>
+          )}
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ background: '#141414', color: '#a0a0a0', fontWeight: '600' }}>
+                <th style={{ padding: '0.75rem' }}>Nom</th>
+                <th style={{ padding: '0.75rem' }}>Prix</th>
+                <th style={{ padding: '0.75rem' }}>Personnes</th>
+                <th style={{ padding: '0.75rem' }}>Admin seulement</th>
+                <th style={{ padding: '0.75rem' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((c) => (
+                <tr key={c.id} style={{ borderBottom: '1px solid #2a2a2a' }}>
+                  <td style={{ padding: '0.75rem', fontWeight: '600' }}>{c.name}</td>
+                  <td style={{ padding: '0.75rem' }}>₣ {Number(c.price).toLocaleString('fr-FR')}</td>
+                  <td style={{ padding: '0.75rem' }}>{c.seats || 1}</td>
+                  <td style={{ padding: '0.75rem' }}>{c.admin_only ? 'Oui' : 'Non'}</td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <button className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }} onClick={() => { setEditingCat(c.id); setCatForm({ name: c.name, price: c.price, seats: c.seats || 1, admin_only: !!c.admin_only }) }}>
+                      ✏️ Modifier
+                    </button>
+                    <button className="btn btn-danger btn-sm" onClick={() => removeCategory(c.id)}>
+                      🗑️ Supprimer
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       <div className="card">
         <div className="card-header">
@@ -172,6 +255,8 @@ export default function Administration() {
                 <th style={{ padding: '0.85rem' }}>N°</th>
                 <th style={{ padding: '0.85rem' }}>Nom</th>
                 <th style={{ padding: '0.85rem' }}>Email</th>
+                <th style={{ padding: '0.85rem' }}>Personnes</th>
+                <th style={{ padding: '0.85rem' }}>Table</th>
                 <th style={{ padding: '0.85rem' }}>Catégorie</th>
                 <th style={{ padding: '0.85rem' }}>Statut</th>
                 <th style={{ padding: '0.85rem' }}>Dernière mise à jour</th>
@@ -184,6 +269,8 @@ export default function Administration() {
                   <td style={{ padding: '0.85rem' }}>{g.id}</td>
                   <td style={{ padding: '0.85rem', fontWeight: '600' }}>{g.first_name} {g.last_name}</td>
                   <td style={{ padding: '0.85rem' }}>{g.email}</td>
+                  <td style={{ padding: '0.85rem' }}>{g.people_count || 1}</td>
+                  <td style={{ padding: '0.85rem' }}>{tableFor(g.table_number)}</td>
                   <td style={{ padding: '0.85rem' }}>
                     {g.category_id ? categories.find(c => c.id === g.category_id)?.name || 'N/A' : '-'}
                   </td>
@@ -307,6 +394,8 @@ export default function Administration() {
                 <th style={{ padding: '0.85rem' }}>Ticket ID</th>
                 <th style={{ padding: '0.85rem' }}>Nom</th>
                 <th style={{ padding: '0.85rem' }}>Email</th>
+                <th style={{ padding: '0.85rem' }}>Personnes</th>
+                <th style={{ padding: '0.85rem' }}>Table</th>
                 <th style={{ padding: '0.85rem' }}>Catégorie</th>
                 <th style={{ padding: '0.85rem' }}>Total</th>
                 <th style={{ padding: '0.85rem' }}>Statut</th>

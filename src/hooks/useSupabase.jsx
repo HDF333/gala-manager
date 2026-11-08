@@ -4,7 +4,7 @@ import { getCurrentEvent, subscribeCurrentEvent } from '../lib/currentEvent'
 
 const EVENT_TABLES = ['categories', 'guests', 'tickets', 'qrcodes', 'tables_placement', 'program_items', 'committee_members', 'expenses', 'finances', 'sponsors']
 
-export function useSupabase(table) {
+export function useSupabase(table, keyColumn = 'id') {
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -61,14 +61,14 @@ export function useSupabase(table) {
   }
 
   const update = async (id, record) => {
-    const { data, error } = await supabase.from(table).update(record).eq('id', id).select().single()
+    const { data, error } = await supabase.from(table).update(record).eq(keyColumn, id).select().single()
     if (error) throw error
     await fetch()
     return data
   }
 
   const del = async (id) => {
-    const { error } = await supabase.from(table).delete().eq('id', id)
+    const { error } = await supabase.from(table).delete().eq(keyColumn, id)
     if (error) throw error
     await fetch()
   }

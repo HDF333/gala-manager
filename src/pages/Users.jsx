@@ -5,19 +5,19 @@ import { useSupabase } from '../hooks/useSupabase'
 import { useAuth } from '../contexts/AuthContext'
 
 const PERMISSIONS = [
-  { key: 'scan_qr', label: 'Scanner les QR codes' },
-  { key: 'voir_invites', label: 'Voir les invités' },
-  { key: 'voir_billets', label: 'Voir les billets' },
-  { key: 'gerer_evenements', label: 'Gérer les événements' },
-  { key: 'gerer_categories', label: 'Gérer les catégories' },
-  { key: 'gerer_finances', label: 'Gérer recettes/dépenses' },
-  { key: 'gerer_utilisateurs', label: 'Gérer les utilisateurs' },
+  { key: 'scan_qr', short: 'Scan QR', label: 'Autoriser le scan des QR codes', desc: 'Contrôler l’entrée des invités en scannant leur billet QR.' },
+  { key: 'voir_invites', short: 'Invités', label: 'Autoriser la consultation des invités', desc: 'Voir la liste des invités, leur tribu et leur table.' },
+  { key: 'voir_billets', short: 'Billets', label: 'Autoriser la consultation des billets', desc: 'Voir les billets vendus, leur catégorie et leur statut.' },
+  { key: 'gerer_evenements', short: 'Événements', label: 'Autoriser la gestion des événements', desc: 'Créer, modifier, activer et supprimer des événements.' },
+  { key: 'gerer_categories', short: 'Catégories', label: 'Autoriser la gestion des catégories', desc: 'Ajouter ou modifier les catégories et fixer leurs prix.' },
+  { key: 'gerer_finances', short: 'Finances', label: 'Autoriser la gestion des recettes et dépenses', desc: 'Enregistrer recettes, dépenses et budgets de l’événement.' },
+  { key: 'gerer_utilisateurs', short: 'Utilisateurs', label: 'Autoriser la gestion des utilisateurs', desc: 'Créer des comptes et attribuer rôles, permissions et événements.' },
 ]
 
 export default function Users() {
   const { profile } = useAuth()
   const { data: roles = [], insert: addRole, update: updateRole, del: deleteRole } = useSupabase('roles')
-  const { data: profiles = [], insert: addProfile, update: updateProfile, del: deleteProfile, refetch: refetchProfiles } = useSupabase('profiles')
+  const { data: profiles = [], insert: addProfile, update: updateProfile, del: deleteProfile, refetch: refetchProfiles } = useSupabase('profiles', 'user_id')
   const { data: events = [] } = useSupabase('events')
   const [roleForm, setRoleForm] = useState({ name: '', permissions: [] })
   const [editingRole, setEditingRole] = useState(null)
@@ -144,12 +144,15 @@ export default function Users() {
               {editingRole && <button type="button" className="btn btn-secondary" onClick={() => { setEditingRole(null); setRoleForm({ name: '', permissions: [] }) }}>Annuler</button>}
             </div>
             <div style={{ marginTop: '1rem' }}>
-              <label style={{ display: 'block', color: '#a0a0a0', fontSize: '0.85rem', marginBottom: '0.5rem' }}>Permissions</label>
+              <label style={{ display: 'block', color: 'var(--text-soft)', fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>Cochez ce que ce type de compte est autorisé à faire :</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.5rem' }}>
                 {PERMISSIONS.map(p => (
-                  <label key={p.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ffffff', fontSize: '0.9rem', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={roleForm.permissions.includes(p.key)} onChange={() => togglePerm(p.key)} />
-                    {p.label}
+                  <label key={p.key} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', color: 'var(--text)', fontSize: '0.9rem', cursor: 'pointer', padding: '0.55rem 0.7rem', border: '1px solid var(--border)', borderRadius: '8px', background: roleForm.permissions.includes(p.key) ? 'var(--accent-soft)' : '#fff' }}>
+                    <input type="checkbox" checked={roleForm.permissions.includes(p.key)} onChange={() => togglePerm(p.key)} style={{ marginTop: '0.2rem' }} />
+                    <span>
+                      <strong style={{ display: 'block', color: 'var(--navy)', fontWeight: 600 }}>{p.label}</strong>
+                      <span style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.78rem', marginTop: '0.15rem' }}>{p.desc}</span>
+                    </span>
                   </label>
                 ))}
               </div>
@@ -175,7 +178,17 @@ export default function Users() {
               {roles.map(r => (
                 <tr key={r.id} style={{ borderBottom: '1px solid #2a2a2a' }}>
                   <td style={{ padding: '0.75rem', fontWeight: '600' }}>{r.name}</td>
-                  <td style={{ padding: '0.75rem' }}>{(r.permissions || []).map(p => PERMISSIONS.find(x => x.key === p)?.label || p).join(', ') || '—'}</td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+                      {(r.permissions || []).includes('*')
+                        ? <span className="badge badge-gold">Tous les droits</span>
+                        : (r.permissions || []).length === 0
+                          ? <span className="badge badge-muted">Aucun droit</span>
+                          : (r.permissions || []).map(pk => (
+                              <span key={pk} className="badge badge-info">{PERMISSIONS.find(x => x.key === pk)?.short || pk}</span>
+                            ))}
+                    </div>
+                  </td>
                   <td style={{ padding: '0.75rem' }}>
                     <button className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }} onClick={() => { setEditingRole(r.id); setRoleForm({ name: r.name, permissions: r.permissions || [] }) }}>✏️</button>
                     <button className="btn btn-danger btn-sm" onClick={() => removeRole(r.id)}>🗑️</button>

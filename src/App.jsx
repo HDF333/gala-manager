@@ -14,7 +14,6 @@ import Finances from './pages/Finances'
 import Expenses from './pages/Expenses'
 import Program from './pages/Program'
 import Committee from './pages/Committee'
-import Reports from './pages/Reports'
 import Inscription from './pages/Inscription'
 import Administration from './pages/Administration'
 import QRCodes from './pages/QRCodes'
@@ -69,7 +68,6 @@ function AppContent() {
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/program" element={<Program />} />
           <Route path="/committee" element={<Committee />} />
-          <Route path="/reports" element={<Reports />} />
           <Route path="/inscription" element={<Inscription />} />
           <Route path="/administration" element={<Administration />} />
           <Route path="/qrcodes" element={<QRCodes />} />

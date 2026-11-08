@@ -10,6 +10,7 @@ export default function QRCodes() {
   const { data: categories = [] } = useSupabase('categories')
 
   const [pendingTicketId, setPendingTicketId] = useState(null)
+  const [detail, setDetail] = useState(null)
   const [generateError, setGenerateError] = useState('')
   const [generateSuccess, setGenerateSuccess] = useState('')
 
@@ -138,7 +139,7 @@ export default function QRCodes() {
             </thead>
             <tbody>
               {qrcodes.map((q) => (
-                <tr key={q.id} style={{ borderBottom: '1px solid #2a2a2a' }}>
+                <tr key={q.id} onClick={() => setDetail(q)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }} title="Voir à qui appartient ce QR">
                   <td style={{ padding: '0.85rem' }}>{q.id}</td>
                   <td style={{ padding: '0.85rem' }}>{q.ticket_id}</td>
                   <td style={{ padding: '0.85rem' }}>
@@ -174,6 +175,32 @@ export default function QRCodes() {
           </table>
         </div>
       </div>
+
+      {detail && (
+        <div className="modal-overlay" onClick={() => setDetail(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">QR {detail.code}</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 0 }}>Ce QR appartient à :</p>
+            <p style={{ margin: '0.3rem 0' }}><strong>{detail.data?.first_name} {detail.data?.last_name}</strong></p>
+            <p style={{ margin: '0.3rem 0', color: 'var(--text-soft)' }}>{detail.data?.category} · Table n°{String(detail.data?.table_number || '—').padStart(3, '0')}</p>
+            <p style={{ margin: '0.3rem 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              {detail.data?.event_name} · {detail.data?.email || 'email non renseigné'} · {detail.data?.people_count || 1} personne(s)
+            </p>
+            <p style={{ margin: '0.5rem 0' }}>
+              <span className={`badge ${detail.status === 'confirmed' ? 'badge-success' : detail.status === 'pending' ? 'badge-warning' : 'badge-info'}`}>{detail.status}</span>
+            </p>
+            {detail.data?.imageUrl && (
+              <img src={detail.data.imageUrl} alt="QR" style={{ width: '100%', maxWidth: '280px', borderRadius: '10px', border: '1px solid var(--border)', marginTop: '0.5rem' }} />
+            )}
+            <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
+              {detail.data?.imageUrl && (
+                <a className="btn btn-gold" href={detail.data.imageUrl} download={'QR-' + detail.code + '.png'}>⬇️ Télécharger</a>
+              )}
+              <button className="btn btn-secondary" onClick={() => setDetail(null)}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

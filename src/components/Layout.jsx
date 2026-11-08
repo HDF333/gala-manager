@@ -20,7 +20,6 @@ const navItems = [
   { path: '/expenses', label: 'Dépenses', icon: '💸', perm: 'gerer_finances' },
   { path: '/program', label: 'Programme', icon: '📅', perm: 'gerer_evenements' },
   { path: '/committee', label: 'Comité', icon: '👥', perm: 'gerer_evenements' },
-  { path: '/reports', label: 'Rapports', icon: '📊', perm: 'gerer_finances' },
   { path: '/qrcodes', label: 'QR Codes', icon: '📱', perm: 'gerer_evenements' },
 ]
 

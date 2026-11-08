@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useSupabase } from '../hooks/useSupabase'
 
@@ -6,6 +6,7 @@ export default function Tables() {
   const { user } = useAuth()
   const { data: tables = [] } = useSupabase('tables_placement')
   const { data: categories = [] } = useSupabase('categories')
+  const [detail, setDetail] = useState(null)
   const { data: guests = [] } = useSupabase('guests')
 
   const seatsByTable = {}
@@ -65,7 +66,7 @@ export default function Tables() {
                 const seats = seatsByTable[t.id] || 0
                 const isFull = seats >= (t.capacity || 10)
                 return (
-                  <div key={t.id} style={{ padding: '1rem', background: '#1a1a1a', borderRadius: '8px', border: '1px solid #2a2a2a' }}>
+                  <div key={t.id} onClick={() => setDetail(t)} style={{ padding: '1rem', background: '#F7F9FE', borderRadius: '10px', border: '1px solid var(--border)', cursor: 'pointer' }} title="Voir les participants">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <strong style={{ color: '#ffffff' }}>Table n°{String(t.number || t.id).padStart(3, '0')}</strong>
@@ -90,6 +91,43 @@ export default function Tables() {
           </div>
         )
       })}
+
+      {detail && (
+        <div className="modal-overlay" onClick={() => setDetail(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Table n°{String(detail.number || detail.id).padStart(3, '0')} — {categories.find(c => c.id === detail.category_id)?.name || 'Sans catégorie'}</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 0 }}>
+              {seatsByTable[detail.id] || 0} / {detail.capacity || 10} places occupées · {guestsByTable[detail.id] || 0} inscription(s)
+            </p>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <thead>
+                <tr style={{ background: '#EDF2FB' }}>
+                  <th style={{ padding: '0.5rem' }}>Participant</th>
+                  <th style={{ padding: '0.5rem' }}>Personnes</th>
+                  <th style={{ padding: '0.5rem' }}>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                {guests.filter(g => g.table_number === detail.id).map(g => (
+                  <tr key={g.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '0.5rem', fontWeight: 600 }}>{g.first_name} {g.last_name}</td>
+                    <td style={{ padding: '0.5rem' }}>{g.people_count || 1}</td>
+                    <td style={{ padding: '0.5rem' }}>
+                      <span className={`badge ${g.status === 'confirmed' ? 'badge-success' : g.status === 'pending' ? 'badge-warning' : 'badge-danger'}`}>{g.status}</span>
+                    </td>
+                  </tr>
+                ))}
+                {guests.filter(g => g.table_number === detail.id).length === 0 && (
+                  <tr><td colSpan="3" style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>Aucun participant sur cette table.</td></tr>
+                )}
+              </tbody>
+            </table>
+            <div style={{ marginTop: '1rem' }}>
+              <button className="btn btn-secondary" onClick={() => setDetail(null)}>Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -20,7 +20,8 @@ export default function Inscription({ publicMode = false } = {}) {
     phone: '',
     company: '',
     category_id: '',
-    notes: ''
+    notes: '',
+    person_type: 'participant'
   })
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
@@ -88,6 +89,7 @@ export default function Inscription({ publicMode = false } = {}) {
           phone: form.phone,
           company: form.company,
           notes: form.notes,
+          person_type: publicMode ? 'participant' : form.person_type,
           image_url: imageUrl
         }
       })
@@ -133,7 +135,7 @@ export default function Inscription({ publicMode = false } = {}) {
         category: reg.category
       })
       setMessage('Inscription envoyée avec succès ! Billet ' + selectedCategory.name + ' créé (' + Number(selectedCategory.price).toLocaleString('fr-FR') + ' FCFA). Table attribuée : ' + selectedCategory.name + ' n°' + String(reg.table_number).padStart(3, '0') + '.')
-      setForm({ first_name: '', last_name: '', email: '', phone: '', company: '', category_id: '', notes: '' })
+      setForm({ first_name: '', last_name: '', email: '', phone: '', company: '', category_id: '', notes: '', person_type: publicMode ? 'participant' : form.person_type })
     } catch (err) {
       setMessage('Erreur : ' + (err.message || 'Erreur de connexion au serveur'))
     } finally {
@@ -242,6 +244,21 @@ export default function Inscription({ publicMode = false } = {}) {
                   onChange={handleChange}
                 />
               </div>
+              {!publicMode && (
+                <div className="form-group">
+                  <label>Type de personne *</label>
+                  <select
+                    name="person_type"
+                    className="form-select"
+                    value={form.person_type}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="participant">Participant</option>
+                    <option value="invite">Invité</option>
+                  </select>
+                </div>
+              )}
               <div className="form-group">
                 <label>Catégorie *</label>
                 <select
@@ -252,7 +269,7 @@ export default function Inscription({ publicMode = false } = {}) {
                   required
                 >
                   <option value="">Sélectionnez une catégorie</option>
-                  {categories.filter(c => !c.admin_only).map((cat) => (
+                  {(publicMode ? categories.filter(c => !c.admin_only) : categories).map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name} — {Number(cat.price).toLocaleString('fr-FR')} FCFA{cat.seats > 1 ? ' (2 personnes)' : ''}
                     </option>

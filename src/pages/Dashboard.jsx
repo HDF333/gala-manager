@@ -16,9 +16,9 @@ export default function Dashboard() {
 
   const activeEvent = events.find(e => e.id === getCurrentEvent())
 
-  const totalRevenue = tickets.filter(t => ['active', 'confirmed', 'used'].includes(t.status)).reduce((s, t) => s + (t.total || 0), 0)
-  const pendingRevenue = tickets.filter(t => t.status === 'pending').reduce((s, t) => s + (t.total || 0), 0)
-  const manualPaid = finances.filter(f => f.status === 'paid').reduce((s, f) => s + (f.amount || 0), 0)
+  const totalRevenue = finances.filter(f => f.status === 'paid').reduce((s, f) => s + (f.amount || 0), 0)
+  const pendingRevenue = finances.filter(f => f.status === 'pending').reduce((s, f) => s + (f.amount || 0), 0)
+  const manualPaid = 0
   const confirmedGuests = guests.filter(g => g.status === 'confirmed').length
   const pendingGuests = guests.filter(g => g.status === 'pending').length
   const seatsTaken = guests.reduce((s, g) => s + (g.people_count || 1), 0)

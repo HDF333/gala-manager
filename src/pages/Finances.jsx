@@ -11,9 +11,9 @@ export default function Finances() {
   const [editing, setEditing] = useState(null)
   const [message, setMessage] = useState('')
 
-  const ticketsRevenue = tickets
-    .filter(t => t.status === 'active' || t.status === 'confirmed')
-    .reduce((s, t) => s + (t.total || 0), 0)
+  const ticketsRevenue = finances
+    .filter(f => f.type === 'Vente')
+    .reduce((s, f) => s + (f.amount || 0), 0)
   const manualPaid = finances.filter(f => f.status === 'paid').reduce((s, f) => s + (f.amount || 0), 0)
   const manualPending = finances.filter(f => f.status === 'pending').reduce((s, f) => s + (f.amount || 0), 0)
   const totalRevenue = ticketsRevenue + manualPaid
@@ -123,6 +123,8 @@ export default function Finances() {
                 <th style={{ padding: '0.75rem' }}>Date</th>
                 <th style={{ padding: '0.75rem' }}>Type</th>
                 <th style={{ padding: '0.75rem' }}>Montant</th>
+                <th style={{ padding: '0.75rem' }}>N° / Référence</th>
+                <th style={{ padding: '0.75rem' }}>N° QR code</th>
                 <th style={{ padding: '0.75rem' }}>Statut</th>
                 <th style={{ padding: '0.75rem' }}>Actions</th>
               </tr>
@@ -133,8 +135,12 @@ export default function Finances() {
                   <td style={{ padding: '0.75rem' }}>{f.payment_date || '-'}</td>
                   <td style={{ padding: '0.75rem', fontWeight: '600' }}>{f.type}</td>
                   <td style={{ padding: '0.75rem' }}>₣ {Number(f.amount || 0).toLocaleString('fr-FR')}</td>
+                  <td style={{ padding: '0.75rem', fontSize: '0.82rem' }}>{f.reference || f.id}</td>
                   <td style={{ padding: '0.75rem' }}>
-                    <span className={`badge ${f.status === 'paid' ? 'badge-success' : 'badge-warning'}`}>{f.status === 'paid' ? 'Encaissé' : 'En attente'}</span>
+                    {f.qr_code ? <code style={{ fontSize: '0.78rem', background: '#EDF2FB', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>{f.qr_code}</code> : '-'}
+                  </td>
+                  <td style={{ padding: '0.75rem' }}>
+                    <span className={`badge ${f.status === 'paid' ? 'badge-success' : 'badge-warning'}`}>{f.status === 'paid' ? 'Validé' : 'En attente'}</span>
                   </td>
                   <td style={{ padding: '0.75rem' }}>
                     <button className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }} onClick={() => { setEditing(f.id); setForm({ type: f.type, amount: f.amount, status: f.status, payment_date: f.payment_date || '' }) }}>✏️</button>

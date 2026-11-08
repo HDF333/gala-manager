@@ -7,6 +7,7 @@ export default function Guests() {
   const { user } = useAuth()
   const { data: guests = [], send: createGuest, update: updateGuest, del: deleteGuest } = useSupabase('guests')
   const { data: tables = [] } = useSupabase('tables_placement')
+  const { data: categories = [] } = useSupabase('categories')
   const [editing, setEditing] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [search, setSearch] = useState('')
@@ -38,6 +39,8 @@ export default function Guests() {
       Email: g.email,
       Telephone: g.phone,
       Tribu: g.company,
+      Type: typeLabel(g.person_type),
+      Categorie: catName(g.category_id),
       Personnes: g.people_count || 1,
       Table: tableFor(g.table_number),
       Statut: g.status
@@ -80,6 +83,9 @@ export default function Guests() {
       alert('Erreur : ' + (err.message || 'Modification impossible'))
     }
   }
+
+  const catName = (cid) => categories.find(c => c.id === cid)?.name || '—'
+  const typeLabel = (t) => (t === 'invite' ? 'Invité' : 'Participant')
 
   const tableFor = (tableNumber) => {
     if (!tableNumber) return '-'
@@ -160,6 +166,8 @@ export default function Guests() {
                 <th style={{ padding: '0.85rem' }}>Email</th>
                 <th style={{ padding: '0.85rem' }}>Téléphone</th>
                 <th style={{ padding: '0.85rem' }}>Tribu</th>
+                <th style={{ padding: '0.85rem' }}>Type</th>
+                <th style={{ padding: '0.85rem' }}>Catégorie</th>
                 <th style={{ padding: '0.85rem' }}>Table</th>
                 <th style={{ padding: '0.85rem' }}>Statut</th>
                 <th style={{ padding: '0.85rem' }}>Actions</th>
@@ -174,6 +182,10 @@ export default function Guests() {
                   <td style={{ padding: '0.85rem' }}>{g.email || '-'}</td>
                   <td style={{ padding: '0.85rem' }}>{g.phone || '-'}</td>
                   <td style={{ padding: '0.85rem' }}>{g.company || '-'}</td>
+                  <td style={{ padding: '0.85rem' }}>
+                    <span className={`badge ${g.person_type === 'invite' ? 'badge-gold' : 'badge-info'}`}>{typeLabel(g.person_type)}</span>
+                  </td>
+                  <td style={{ padding: '0.85rem' }}>{catName(g.category_id)}</td>
                   <td style={{ padding: '0.85rem' }}>{tableFor(g.table_number)}</td>
                   <td style={{ padding: '0.85rem' }}>
                     <span className={`badge ${g.status === 'confirmed' ? 'badge-success' : g.status === 'pending' ? 'badge-warning' : 'badge-danger'}`}>

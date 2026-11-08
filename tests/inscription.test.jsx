@@ -38,7 +38,7 @@ async function fillAndSubmit() {
   fireEvent.change(screen.getByPlaceholderText('Jean'), { target: { value: 'Awa' } })
   fireEvent.change(screen.getByPlaceholderText('Dupont'), { target: { value: 'Test' } })
   fireEvent.change(screen.getByPlaceholderText('jean@exemple.com'), { target: { value: 'awa@example.test' } })
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: '7' } })
+  fireEvent.change(document.querySelector('select[name="category_id"]'), { target: { value: '7' } })
   fireEvent.change(screen.getByPlaceholderText('Événement spécial, allergie, demande particulière...'), { target: { value: 'Allergie' } })
   fireEvent.submit(screen.getByRole('button', { name: "S'inscrire au gala" }).closest('form'))
 }
@@ -47,7 +47,7 @@ test('submits a pending registration with table and shows the personal QR code',
   render(<Inscription />)
   await fillAndSubmit()
   await waitFor(() => expect(fake.rpc).toHaveBeenCalledWith('register_guest', expect.objectContaining({
-    p_payload: expect.objectContaining({ first_name: 'Awa', last_name: 'Test', category_id: 7, notes: 'Allergie', people_count: 1 }),
+    p_payload: expect.objectContaining({ first_name: 'Awa', last_name: 'Test', category_id: 7, notes: 'Allergie', people_count: 1, person_type: 'participant' }),
   })))
   expect(await screen.findByText(/Table attribuée : VIP n°001/)).toBeTruthy()
   expect(await screen.findByText('🎫 Votre QR Code personnel')).toBeTruthy()

@@ -6,7 +6,6 @@ import Layout from './components/Layout'
 
 import Dashboard from './pages/Dashboard'
 import Guests from './pages/Guests'
-import Tickets from './pages/Tickets'
 import AccessControl from './pages/AccessControl'
 import Tables from './pages/Tables'
 import Sponsors from './pages/Sponsors'
@@ -60,7 +59,6 @@ function AppContent() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/guests" element={<Guests />} />
-          <Route path="/tickets" element={<Tickets />} />
           <Route path="/access-control" element={<AccessControl />} />
           <Route path="/tables" element={<Tables />} />
           <Route path="/sponsors" element={<Sponsors />} />

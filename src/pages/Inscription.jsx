@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import QRCode from 'qrcode'
+import { buildQRCard } from '../utils/qrcard'
 import { useAuth } from '../contexts/AuthContext'
 import { useSupabase } from '../hooks/useSupabase'
 import { supabase } from '../lib/supabase'
@@ -57,7 +58,10 @@ export default function Inscription() {
       if (!eventId) {
         throw new Error('Aucun événement actif. Choisissez un événement dans le menu Événements.')
       }
-      const eventName = (await supabase.from('events').select('name').eq('id', eventId).single()).data?.name || 'Événement'
+      const evRow = (await supabase.from('events').select('name, date, venue').eq('id', eventId).single()).data
+      const eventName = evRow?.name || 'Événement'
+      const eventDate = evRow?.date || null
+      const eventVenue = evRow?.venue || ''
       // QR unique et personnalisé avec toutes les informations
       const qrPayload = JSON.stringify({
         code: '',
@@ -70,7 +74,8 @@ export default function Inscription() {
         people_count: selectedCategory.seats,
         event_name: eventName
       })
-      const imageUrl = await QRCode.toDataURL(qrPayload, { width: 320, margin: 1, errorCorrectionLevel: 'M' })
+      const qrDataUrl = await QRCode.toDataURL(qrPayload, { width: 480, margin: 1, errorCorrectionLevel: 'M' })
+      const imageUrl = qrDataUrl
       const { data: reg, error: rpcError } = await supabase.rpc('register_guest', {
         p_payload: {
           event_id: eventId,
@@ -87,8 +92,23 @@ export default function Inscription() {
       })
       if (rpcError) throw rpcError
       if (!reg || !reg.ok) throw new Error(reg?.message || 'Inscription impossible')
+
+      // Carte QR personnalisée : nom de l'événement en haut, date/lieu + table en bas
+      const cardImage = await buildQRCard({
+        eventName,
+        eventDate,
+        eventVenue,
+        guestName: (form.first_name + ' ' + form.last_name).trim(),
+        category: reg.category,
+        tableNumber: reg.table_number,
+        qrDataUrl
+      }).catch(() => qrDataUrl)
+      if (cardImage && cardImage !== qrDataUrl) {
+        await supabase.rpc('set_qr_image', { p_ticket_code: reg.ticket_code, p_image: cardImage })
+      }
+
       setQrResult({
-        imageUrl: reg.imageUrl,
+        imageUrl: cardImage,
         ticketCode: reg.ticket_code,
         tableNumber: reg.table_number,
         category: reg.category

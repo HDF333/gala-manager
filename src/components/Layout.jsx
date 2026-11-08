@@ -5,24 +5,31 @@ import { useSupabase } from '../hooks/useSupabase'
 import { getCurrentEvent, setCurrentEvent } from '../lib/currentEvent'
 
 const navItems = [
-  { path: '/events', label: 'Événements', icon: '🎭' },
-  { path: '/scan', label: 'Scanner', icon: '📷' },
-  { path: '/users', label: 'Utilisateurs', icon: '👤' },
+  { path: '/events', label: 'Événements', icon: '🎭', perm: 'gerer_evenements' },
+  { path: '/scan', label: 'Scanner', icon: '📷', perm: 'scan_qr' },
+  { path: '/users', label: 'Utilisateurs', icon: '👤', perm: 'gerer_utilisateurs' },
   { path: '/dashboard', label: 'Tableau de bord', icon: '📊' },
-  { path: '/guests', label: 'Invités', icon: '👥' },
-  { path: '/tickets', label: 'Billets', icon: '🎫' },
+  { path: '/guests', label: 'Invités', icon: '👥', perm: 'voir_invites' },
+  { path: '/tickets', label: 'Billets', icon: '🎫', perm: 'voir_billets' },
   { path: '/inscription', label: 'Inscription', icon: '📝' },
-  { path: '/administration', label: 'Administration', icon: '🛡️' },
-  { path: '/access-control', label: 'Contrôle d\'accès', icon: '🎟️' },
+  { path: '/administration', label: 'Administration', icon: '🛡️', perm: 'gerer_evenements' },
+  { path: '/access-control', label: 'Contrôle d\'accès', icon: '🎟️', perm: 'scan_qr' },
   { path: '/tables', label: 'Tables', icon: '🍽️' },
-  { path: '/sponsors', label: 'Sponsors', icon: '🤝' },
-  { path: '/finances', label: 'Recettes', icon: '💰' },
-  { path: '/expenses', label: 'Dépenses', icon: '💸' },
-  { path: '/program', label: 'Programme', icon: '📅' },
-  { path: '/committee', label: 'Comité', icon: '👥' },
-  { path: '/reports', label: 'Rapports', icon: '📊' },
-  { path: '/qrcodes', label: 'QR Codes', icon: '📱' },
+  { path: '/sponsors', label: 'Sponsors', icon: '🤝', perm: 'gerer_finances' },
+  { path: '/finances', label: 'Recettes', icon: '💰', perm: 'gerer_finances' },
+  { path: '/expenses', label: 'Dépenses', icon: '💸', perm: 'gerer_finances' },
+  { path: '/program', label: 'Programme', icon: '📅', perm: 'gerer_evenements' },
+  { path: '/committee', label: 'Comité', icon: '👥', perm: 'gerer_evenements' },
+  { path: '/reports', label: 'Rapports', icon: '📊', perm: 'gerer_finances' },
+  { path: '/qrcodes', label: 'QR Codes', icon: '📱', perm: 'gerer_evenements' },
 ]
+
+const hasPerm = (profile, key) => {
+  if (!profile) return false
+  if (profile.role === 'Administrateur') return true
+  const perms = profile.permissions || []
+  return perms.includes('*') || (key ? perms.includes(key) : true)
+}
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -30,6 +37,7 @@ function Layout({ children }) {
   const { user, logout, profile } = useAuth()
   const { data: events = [] } = useSupabase('events')
   const activeEvent = events.find(e => e.id === getCurrentEvent())
+  const visibleNav = navItems.filter(item => !item.perm || hasPerm(profile, item.perm))
   const [logoutError, setLogoutError] = useState('')
   const [loggingOut, setLoggingOut] = useState(false)
   const location = useLocation()
@@ -66,19 +74,21 @@ function Layout({ children }) {
 
   return (
     <div className="app">
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-hidden="true" />}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
           <img src="/logo.jpg" alt="EVEN MANAGER" className="sidebar-logo-icon" style={{ objectFit: 'cover', padding: 0 }} />
           <span className="sidebar-logo-text">EVEN MANAGER</span>
         </div>
         <nav className="sidebar-nav">
-          {navItems.map((item) => {
+          {visibleNav.map((item) => {
             const active = location.pathname === item.path ||
               (item.path === '/dashboard' && location.pathname === '/')
             return (
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={() => setSidebarOpen(false)}
                 className={`sidebar-nav-item${active ? ' active' : ''}`}
                 aria-current={active ? 'page' : undefined}
               >

@@ -7,7 +7,12 @@ import App from '../src/App'
 // Navigation is exercised with real pages and isolated authentication/data.
 vi.mock('../src/contexts/AuthContext', () => ({
   AuthProvider: ({ children }) => children,
-  useAuth: () => ({ user: { id: 'test-user', first_name: 'Test' }, loading: false, logout: vi.fn() }),
+  useAuth: () => ({
+    user: { id: 'test-user', first_name: 'Test' },
+    profile: { role: 'Administrateur', permissions: ['*'], eventId: null, active: true },
+    loading: false,
+    logout: vi.fn(),
+  }),
 }))
 vi.mock('../src/hooks/useSupabase', () => ({
   useSupabase: () => ({ data: [], loading: false, error: null, refetch: vi.fn() }),

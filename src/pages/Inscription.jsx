@@ -62,20 +62,8 @@ export default function Inscription() {
       const eventName = evRow?.name || 'Événement'
       const eventDate = evRow?.date || null
       const eventVenue = evRow?.venue || ''
-      // QR unique et personnalisé avec toutes les informations
-      const qrPayload = JSON.stringify({
-        code: '',
-        first_name: form.first_name,
-        last_name: form.last_name,
-        email: form.email,
-        phone: form.phone,
-        tribu: form.company,
-        category: selectedCategory.name,
-        people_count: selectedCategory.seats,
-        event_name: eventName
-      })
-      const qrDataUrl = await QRCode.toDataURL(qrPayload, { width: 480, margin: 1, errorCorrectionLevel: 'M' })
-      const imageUrl = qrDataUrl
+      // (le QR définitif est généré APRÈS l'enregistrement, avec le vrai code billet)
+      const imageUrl = ''
       const { data: reg, error: rpcError } = await supabase.rpc('register_guest', {
         p_payload: {
           event_id: eventId,
@@ -92,6 +80,24 @@ export default function Inscription() {
       })
       if (rpcError) throw rpcError
       if (!reg || !reg.ok) throw new Error(reg?.message || 'Inscription impossible')
+
+      // QR définitif : contient le vrai code billet, la table et toutes les infos d'inscription
+      const qrPayload = JSON.stringify({
+        code: reg.ticket_code,
+        ticket_code: reg.ticket_code,
+        first_name: form.first_name,
+        last_name: form.last_name,
+        email: form.email,
+        phone: form.phone,
+        tribu: form.company,
+        category: reg.category,
+        people_count: selectedCategory.seats,
+        table_number: reg.table_number,
+        event_name: eventName,
+        event_date: eventDate,
+        event_venue: eventVenue
+      })
+      const qrDataUrl = await QRCode.toDataURL(qrPayload, { width: 480, margin: 1, errorCorrectionLevel: 'M' })
 
       // Carte QR personnalisée : nom de l'événement en haut, date/lieu + table en bas
       const cardImage = await buildQRCard({

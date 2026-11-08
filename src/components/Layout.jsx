@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSupabase } from '../hooks/useSupabase'
 import { hasPerm } from '../lib/permissions'
@@ -27,7 +27,7 @@ const navItems = [
 const QUICK_ACTIONS = {
   '/dashboard': { label: 'Nouvelle inscription', selector: 'form' },
   '/events': { label: 'Nouvel événement', selector: 'form' },
-  '/guests': { label: 'Nouvel invité', selector: 'form' },
+  '/guests': { label: 'Inscrire un participant', to: '/inscription' },
   '/inscription': { label: 'Nouvelle inscription', selector: 'form' },
   '/administration': { label: 'Nouvelle catégorie', selector: 'form' },
   '/users': { label: 'Nouvel utilisateur', selector: '#create-user' },
@@ -44,6 +44,7 @@ function Layout({ children }) {
   const [quickOpen, setQuickOpen] = useState(false)
   const { user, logout, profile } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const { data: events = [] } = useSupabase('events')
   const activeEvent = events.find(e => e.id === getCurrentEvent())
   const visibleNav = navItems.filter(item => !item.perm || hasPerm(profile, item.perm))
@@ -52,6 +53,7 @@ function Layout({ children }) {
   const handleQuickAction = () => {
     if (!quickAction) return
     setQuickOpen(false)
+    if (quickAction.to) { navigate(quickAction.to); return }
     const target = document.querySelector(quickAction.selector)
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'center' })

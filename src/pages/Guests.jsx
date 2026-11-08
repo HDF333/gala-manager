@@ -5,7 +5,7 @@ import { downloadCSV } from '../utils/export'
 
 export default function Guests() {
   const { user } = useAuth()
-  const { data: guests = [], send: createGuest, update: updateGuest, del: deleteGuest } = useSupabase('guests')
+  const { data: guests = [], update: updateGuest, del: deleteGuest } = useSupabase('guests')
   const { data: tables = [] } = useSupabase('tables_placement')
   const { data: categories = [] } = useSupabase('categories')
   const [editing, setEditing] = useState(null)
@@ -47,22 +47,6 @@ export default function Guests() {
     })))
   }
 
-  const handleAddGuest = async (e) => {
-    e.preventDefault()
-    const form = e.target
-    const guest = {
-      first_name: form.firstName.value,
-      last_name: form.lastName.value,
-      email: form.email.value,
-      phone: form.phone.value,
-      company: form.company.value,
-      status: 'confirmed'
-    }
-    await createGuest(guest)
-    alert('Participant inscrit !')
-    form.reset()
-  }
-
   const openEdit = (g) => {
     setEditing(g.id)
     setEditForm({
@@ -98,47 +82,6 @@ export default function Guests() {
       <div className="page-title">Participants</div>
       <div className="page-subtitle">
         {guests.length} participant(s) enregistré(s)
-      </div>
-
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title">Inscrire un participant</h2>
-        </div>
-        <div className="card-body">
-          <form onSubmit={handleAddGuest}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className="form-group">
-                <label>Prénom</label>
-                <input name="firstName" className="form-input" placeholder="Prénom" />
-              </div>
-              <div className="form-group">
-                <label>Nom</label>
-                <input name="lastName" className="form-input" placeholder="Nom" />
-              </div>
-              <div className="form-group">
-                <label>Email</label>
-                <input name="email" type="email" className="form-input" placeholder="email@exemple.com" />
-              </div>
-              <div className="form-group">
-                <label>Téléphone</label>
-                <input name="phone" className="form-input" placeholder="06 12 34 56 78" />
-              </div>
-              <div className="form-group">
-                <label>Tribu</label>
-                <input name="company" className="form-input" placeholder="Nom de la tribu" />
-              </div>
-              <div className="form-group">
-                <label>Statut</label>
-                <select name="status" className="form-select">
-                  <option value="confirmed">Confirmé</option>
-                  <option value="pending">En attente</option>
-                  <option value="cancelled">Annulé</option>
-                </select>
-              </div>
-            </div>
-            <button type="submit" className="btn btn-primary">Ajouter</button>
-          </form>
-        </div>
       </div>
 
       <div className="card">

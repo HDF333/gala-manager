@@ -21,17 +21,22 @@ const routes = [...source.matchAll(/<Route path="([^"]+)" element=\{<([A-Za-z]+)
     const pagePath = path.resolve(`src/pages/${component}.jsx`)
     if (!fs.existsSync(pagePath)) return null
     const page = fs.readFileSync(pagePath, 'utf8')
-    return [route, page.match(/className="page-title">([^<]+)</)[1]]
+    // Les pages publiques plein écran (téléphone) n'utilisent pas .page-title
+    const title = page.match(/className="page-title">([^<]+)</)
+    if (!title) return null
+    return [route, title[1]]
   })
   .filter(Boolean)
+
+const pageFiles = fs.readdirSync(path.resolve('src/pages')).filter(f => f.endsWith('.jsx'))
+const titledPages = pageFiles.filter(f => fs.readFileSync(path.resolve('src/pages', f), 'utf8').includes('className="page-title"')).length
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Live network forbidden in tests')))
 })
 
 test('route coverage includes all declared pages and the home alias', () => {
-  const pageCount = fs.readdirSync(path.resolve('src/pages')).filter(f => f.endsWith('.jsx')).length
-  expect(routes).toHaveLength(pageCount + 1) // '/' alias (la page publique est un message, pas une page)
+  expect(routes).toHaveLength(titledPages + 1) // '/' alias (la page publique est un message, pas une page)
   expect(new Set(routes.map(([route]) => route)).size).toBe(routes.length)
 })
 

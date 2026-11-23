@@ -4,6 +4,7 @@ export const PERMISSIONS = [
   { key: 'voir_invites', short: 'Participants', label: 'Autoriser la consultation des participants', desc: 'Voir la liste des participants, leur tribu et leur table.' },
   { key: 'voir_billets', short: 'Billets', label: 'Autoriser la consultation des billets', desc: 'Voir les billets vendus, leur catégorie et leur statut.' },
   { key: 'gerer_evenements', short: 'Événements', label: 'Autoriser la gestion des événements', desc: 'Créer, modifier, activer et supprimer des événements.' },
+  { key: 'animer_evenement', short: 'Animation', label: 'Autoriser l’animation de la soirée', desc: 'Lancer les quiz, ouvrir les votes et la tombola, projeter le classement.' },
   { key: 'gerer_categories', short: 'Catégories', label: 'Autoriser la gestion des catégories', desc: 'Ajouter ou modifier les catégories et fixer leurs prix.' },
   { key: 'gerer_finances', short: 'Finances', label: 'Autoriser la gestion des recettes et dépenses', desc: 'Enregistrer recettes, dépenses et budgets de l’événement.' },
   { key: 'gerer_utilisateurs', short: 'Utilisateurs', label: 'Autoriser la gestion des utilisateurs', desc: 'Créer des comptes et attribuer rôles, permissions et événements.' },

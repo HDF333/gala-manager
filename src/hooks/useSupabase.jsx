@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { getCurrentEvent, subscribeCurrentEvent } from '../lib/currentEvent'
 
-const EVENT_TABLES = ['categories', 'guests', 'tickets', 'qrcodes', 'tables_placement', 'program_items', 'committee_members', 'expenses', 'finances', 'sponsors']
+const EVENT_TABLES = ['categories', 'guests', 'tickets', 'qrcodes', 'tables_placement', 'program_items', 'committee_members', 'expenses', 'finances', 'sponsors',
+  'animations', 'animation_questions', 'animation_players', 'animation_answers', 'animation_candidates',
+  'animation_votes', 'animation_entries', 'animation_draws']
 
 export function useSupabase(table, keyColumn = 'id') {
   const [data, setData] = useState([])

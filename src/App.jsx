@@ -19,6 +19,8 @@ import QRCodes from './pages/QRCodes'
 import Events from './pages/Events'
 import Scan from './pages/Scan'
 import Users from './pages/Users'
+import Animations from './pages/Animations'
+import AnimationPublic from './pages/AnimationPublic'
 import { setCurrentEvent } from './lib/currentEvent'
 
 function AppContent() {
@@ -32,6 +34,17 @@ function AppContent() {
       <Router>
         <Routes>
           <Route path="/inscription-publique" element={<PublicInscription />} />
+        </Routes>
+      </Router>
+    )
+  }
+
+  // Lien public du module d'animation (quiz, vote, tombola depuis le téléphone)
+  if (typeof window !== 'undefined' && window.location.pathname === '/animation') {
+    return (
+      <Router>
+        <Routes>
+          <Route path="/animation" element={<AnimationPublic />} />
         </Routes>
       </Router>
     )
@@ -72,6 +85,7 @@ function AppContent() {
           <Route path="/events" element={<Events />} />
           <Route path="/scan" element={<Scan />} />
           <Route path="/users" element={<Users />} />
+          <Route path="/animations" element={<Animations />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>

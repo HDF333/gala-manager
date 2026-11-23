@@ -94,7 +94,11 @@ export default function Inscription({ publicMode = false } = {}) {
         }
       })
       if (rpcError) throw rpcError
-      if (!reg || !reg.ok) throw new Error(reg?.message || 'Inscription impossible')
+      if (!reg || !reg.ok) {
+        const dupError = new Error(reg?.message || 'Inscription impossible')
+        dupError.duplicate = !!reg?.duplicate
+        throw dupError
+      }
 
       // QR définitif : contient le vrai code billet, la table et toutes les infos d'inscription
       const qrPayload = JSON.stringify({
@@ -137,7 +141,7 @@ export default function Inscription({ publicMode = false } = {}) {
       setMessage('Inscription envoyée avec succès ! Billet ' + selectedCategory.name + ' créé (' + Number(selectedCategory.price).toLocaleString('fr-FR') + ' FCFA). Table attribuée : ' + selectedCategory.name + ' n°' + String(reg.table_number).padStart(3, '0') + '.')
       setForm({ first_name: '', last_name: '', email: '', phone: '', company: '', category_id: '', notes: '', person_type: publicMode ? 'participant' : form.person_type })
     } catch (err) {
-      setMessage('Erreur : ' + (err.message || 'Erreur de connexion au serveur'))
+      setMessage(err.duplicate ? err.message : 'Erreur : ' + (err.message || 'Erreur de connexion au serveur'))
     } finally {
       setSubmitting(false)
     }
@@ -152,10 +156,14 @@ export default function Inscription({ publicMode = false } = {}) {
             padding: '1rem',
             borderRadius: '8px',
             marginBottom: '1rem',
-            backgroundColor: message.includes('succès') ? 'rgba(26,122,58,0.1)' : 'rgba(184,26,26,0.1)',
-            color: message.includes('succès') ? '#1a7a3a' : '#b81a1a'
+            backgroundColor: message.includes('succès')
+              ? 'rgba(26,122,58,0.1)'
+              : (message.startsWith('Doublon') ? 'rgba(201,151,0,0.12)' : 'rgba(184,26,26,0.1)'),
+            color: message.includes('succès')
+              ? '#1a7a3a'
+              : (message.startsWith('Doublon') ? '#8a6600' : '#b81a1a')
           }}>
-            {message}
+            {message.startsWith('Doublon') ? '⚠️ ' : ''}{message}
           </div>
         )}
         <p>Remplissez le formulaire ci-dessous pour vous inscrire au gala.</p>

@@ -14,6 +14,7 @@ const navItems = [
   { path: '/inscription', label: 'Inscription', icon: '📝', perm: 'gerer_participants' },
   { path: '/administration', label: 'Administration', icon: '🛡️', perm: 'gerer_evenements' },
   { path: '/access-control', label: 'Contrôle d\'accès', icon: '🎟️', perm: 'scan_qr' },
+  { path: '/animations', label: 'Animation', icon: '🎤', perm: 'animer_evenement' },
   { path: '/tables', label: 'Tables', icon: '🍽️' },
   { path: '/sponsors', label: 'Sponsors', icon: '🤝', perm: 'gerer_finances' },
   { path: '/finances', label: 'Recettes', icon: '💰', perm: 'gerer_finances' },
@@ -37,6 +38,7 @@ const QUICK_ACTIONS = {
   '/program': { label: 'Nouvel élément', selector: 'form' },
   '/committee': { label: 'Nouveau membre', selector: 'form' },
   '/qrcodes': { label: 'Générer un QR code', selector: 'select' },
+  '/animations': { label: 'Nouvelle animation', selector: 'form' },
 }
 
 function Layout({ children }) {

@@ -428,7 +428,7 @@ alter table public.animation_draws enable row level security;
 
 drop policy if exists animations_read on public.animations;
 create policy animations_read on public.animations for select
-  using (auth.uid() is null or is_admin() or event_id = app_event());
+  using ((auth.uid() is null and status <> 'draft') or is_admin() or event_id = app_event());
 drop policy if exists animations_write on public.animations;
 create policy animations_write on public.animations for all to authenticated
   using (is_admin() or event_id = app_event())
@@ -436,7 +436,7 @@ create policy animations_write on public.animations for all to authenticated
 
 drop policy if exists animation_questions_read on public.animation_questions;
 create policy animation_questions_read on public.animation_questions for select
-  using (auth.uid() is null or is_admin() or event_id = app_event());
+  using ((auth.uid() is null and status <> 'draft') or is_admin() or event_id = app_event());
 drop policy if exists animation_questions_write on public.animation_questions;
 create policy animation_questions_write on public.animation_questions for all to authenticated
   using (is_admin() or event_id = app_event())
@@ -775,6 +775,10 @@ grant execute on function public.animation_draw(bigint) to authenticated;
 -- ---------------------------------------------------------------------------
 -- 4. VUES UTILES
 -- ---------------------------------------------------------------------------
+
+-- Anciennes surcharges d'attribution (ignoraient la catégorie) : supprimées
+drop function if exists public.assign_table(bigint);
+drop function if exists public.assign_table(bigint, bigint);
 
 create or replace view public.animation_ranking as
 select pl.event_id,

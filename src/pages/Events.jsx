@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useSupabase } from '../hooks/useSupabase'
 import { supabase } from '../lib/supabase'
 import { getCurrentEvent, setCurrentEvent } from '../lib/currentEvent'
+import { sendReminderSms } from '../lib/sms'
 
 export default function Events() {
   const { data: events = [], update: updateEvent, del: deleteEvent, refetch } = useSupabase('events')
@@ -19,6 +20,65 @@ export default function Events() {
   const [message, setMessage] = useState('')
   const [creating, setCreating] = useState(false)
   const current = getCurrentEvent()
+
+  // ---- Rappels SMS (SMS MANAGER) ----
+  const [reminderMsg, setReminderMsg] = useState('')
+  const [smsState, setSmsState] = useState({ running: false, done: 0, total: 0, ok: 0, failed: 0, errors: [], info: '' })
+
+  useEffect(() => {
+    const ev = events.find(e => e.id === current)
+    if (ev) {
+      setReminderMsg(
+        `Rappel : ${ev.name || 'Notre événement'}` +
+        (ev.date ? ` le ${new Date(ev.date).toLocaleDateString('fr-FR')}` : '') +
+        (ev.venue ? ` à ${ev.venue}` : '') +
+        `. Nous vous attendons. Merci !`
+      )
+    }
+  }, [current, events])
+
+  const handleSendReminders = async () => {
+    setSmsState({ running: true, done: 0, total: 0, ok: 0, failed: 0, errors: [], info: '' })
+    try {
+      const { data: guests, error } = await supabase
+        .from('guests')
+        .select('id, first_name, last_name, phone, status')
+        .eq('event_id', current)
+        .not('phone', 'is', null)
+      if (error) throw error
+      const targets = (guests || []).filter(g => g.phone && g.status !== 'rejected')
+      if (targets.length === 0) {
+        setSmsState({ running: false, done: 0, total: 0, ok: 0, failed: 0, errors: [], info: 'Aucun invité avec numéro de téléphone pour cet événement.' })
+        return
+      }
+      let ok = 0
+      let failed = 0
+      const errors = []
+      const ev = events.find(e => e.id === current)
+      for (let i = 0; i < targets.length; i++) {
+        const guest = targets[i]
+        const result = await sendReminderSms({
+          guest,
+          message: reminderMsg,
+          event_name: ev?.name,
+          event_date: ev?.date ? new Date(ev.date).toLocaleDateString('fr-FR') : '',
+          event_venue: ev?.venue,
+        })
+        if (result && result.ok) {
+          ok++
+        } else {
+          failed++
+          errors.push(`${guest.first_name || ''} ${guest.last_name || ''} : ${result?.error || 'échec'}`)
+        }
+        setSmsState({ running: true, done: i + 1, total: targets.length, ok, failed, errors, info: '' })
+        // Petite pause pour ne pas surcharger le backend.
+        await new Promise(r => setTimeout(r, 400))
+      }
+      setSmsState({ running: false, done: targets.length, total: targets.length, ok, failed, errors, info: `Terminé : ${ok} envoyé(s), ${failed} échec(s).` })
+    } catch (err) {
+      setSmsState({ running: false, done: 0, total: 0, ok: 0, failed: 0, errors: [], info: 'Erreur : ' + (err.message || 'Envoi impossible') })
+    }
+  }
 
   const handleCreate = async (e) => {
     e.preventDefault()
@@ -204,6 +264,56 @@ export default function Events() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Rappels SMS (SMS MANAGER)</h2>
+          {current ? (
+            <span className="badge badge-gold">Événement actif : {events.find(e => e.id === current)?.name || '—'}</span>
+          ) : (
+            <span className="badge badge-muted">Aucun événement actif</span>
+          )}
+        </div>
+        <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <p style={{ color: '#a0a0a0', fontSize: '0.9rem', margin: 0 }}>
+            Envoie un rappel par SMS à tous les invités de l'événement actif qui ont un numéro de téléphone.
+            L'envoi réel est assuré par votre passerelle SMS MANAGER (téléphone branché).
+          </p>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label>Message du rappel</label>
+            <textarea
+              className="form-input"
+              rows={3}
+              value={reminderMsg}
+              onChange={(e) => setReminderMsg(e.target.value)}
+              disabled={smsState.running}
+            />
+          </div>
+          {smsState.running && (
+            <div style={{ color: '#d4af37', fontSize: '0.9rem' }}>
+              Envoi en cours… {smsState.done}/{smsState.total}
+              {' '}({smsState.ok} ok, {smsState.failed} échec)
+            </div>
+          )}
+          {smsState.info && (
+            <div style={{ padding: '0.75rem', borderRadius: '8px', background: 'rgba(26,122,58,0.1)', color: '#1a7a3a', fontSize: '0.9rem' }}>
+              {smsState.info}
+            </div>
+          )}
+          {smsState.errors.length > 0 && (
+            <div style={{ padding: '0.75rem', borderRadius: '8px', background: 'rgba(184,26,26,0.1)', color: '#b81a1a', fontSize: '0.85rem', maxHeight: '160px', overflow: 'auto' }}>
+              {smsState.errors.map((e, i) => <div key={i}>• {e}</div>)}
+            </div>
+          )}
+          <button
+            className="btn btn-gold"
+            onClick={handleSendReminders}
+            disabled={!current || smsState.running}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            {smsState.running ? 'Envoi…' : '📨 Envoyer les rappels SMS'}
+          </button>
         </div>
       </div>
     </div>

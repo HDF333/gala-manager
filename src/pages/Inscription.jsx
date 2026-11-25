@@ -6,6 +6,7 @@ import { useSupabase } from '../hooks/useSupabase'
 import { supabase } from '../lib/supabase'
 import { getCurrentEvent } from '../lib/currentEvent'
 import { hasPerm } from '../lib/permissions'
+import { sendWelcomeSms } from '../lib/sms'
 
 export default function Inscription({ publicMode = false } = {}) {
   const { user, profile } = useAuth()
@@ -98,6 +99,17 @@ export default function Inscription({ publicMode = false } = {}) {
         const dupError = new Error(reg?.message || 'Inscription impossible')
         dupError.duplicate = !!reg?.duplicate
         throw dupError
+      }
+
+      // SMS de bienvenue automatique (SMS MANAGER) — ne bloque jamais
+      // l'inscription si l'envoi échoue.
+      if (form.phone) {
+        sendWelcomeSms({
+          first_name: form.first_name,
+          phone: form.phone,
+          ticket_code: reg.ticket_code,
+          event_name: eventName,
+        }).catch(() => {})
       }
 
       // QR définitif : contient le vrai code billet, la table et toutes les infos d'inscription

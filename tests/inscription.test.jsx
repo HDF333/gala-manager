@@ -10,6 +10,8 @@ vi.mock('qrcode', () => ({
 }))
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'test' }, profile: { role: 'Administrateur', permissions: ['*'] } }) }))
 vi.mock('../src/lib/supabase', () => ({
+  SUPABASE_URL: 'https://test.supabase.co',
+  SUPABASE_ANON_KEY: 'test-anon-key',
   supabase: {
     rpc: fake.rpc,
     from: () => ({

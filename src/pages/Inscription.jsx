@@ -4,11 +4,13 @@ import { buildQRCard } from '../utils/qrcard'
 import { useAuth } from '../contexts/AuthContext'
 import { useSupabase } from '../hooks/useSupabase'
 import { supabase } from '../lib/supabase'
+import { supabasePublic } from '../lib/supabasePublic'
 import { getCurrentEvent } from '../lib/currentEvent'
 import { hasPerm } from '../lib/permissions'
 import { sendTypedSms, loadSmsSettings } from '../lib/sms'
 
 export default function Inscription({ publicMode = false } = {}) {
+  const db = publicMode ? supabasePublic : supabase
   const { user, profile } = useAuth()
   const { data: categories = [], error } = useSupabase('categories')
   const { data: eventsList = [] } = useSupabase('events')
@@ -73,13 +75,13 @@ export default function Inscription({ publicMode = false } = {}) {
       if (!eventId) {
         throw new Error('Aucun événement actif. Choisissez un événement dans le menu Événements.')
       }
-      const evRow = (await supabase.from('events').select('name, date, venue').eq('id', eventId).single()).data
+      const evRow = (await db.from('events').select('name, date, venue').eq('id', eventId).single()).data
       const eventName = evRow?.name || 'Événement'
       const eventDate = evRow?.date || null
       const eventVenue = evRow?.venue || ''
       // (le QR définitif est généré APRÈS l'enregistrement, avec le vrai code billet)
       const imageUrl = ''
-      const { data: reg, error: rpcError } = await supabase.rpc('register_guest', {
+      const { data: reg, error: rpcError } = await db.rpc('register_guest', {
         p_payload: {
           event_id: eventId,
           category_id: selectedCategory.id,
@@ -151,7 +153,7 @@ export default function Inscription({ publicMode = false } = {}) {
         qrDataUrl
       }).catch(() => qrDataUrl)
       if (cardImage && cardImage !== qrDataUrl) {
-        await supabase.rpc('set_qr_image', { p_ticket_code: reg.ticket_code, p_image: cardImage })
+        await db.rpc('set_qr_image', { p_ticket_code: reg.ticket_code, p_image: cardImage })
       }
 
       setQrResult({

@@ -11,7 +11,12 @@ const auth = vi.hoisted(() => ({
   onAuthStateChange: vi.fn(),
   signOut: vi.fn(),
 }))
-vi.mock('../src/lib/supabase', () => ({ supabase: { auth } }))
+vi.mock('../src/lib/supabase', () => ({
+  supabase: { auth },
+  SUPABASE_URL: 'https://test.supabase.co',
+  SUPABASE_ANON_KEY: 'test-anon-key',
+  default: { auth },
+}))
 vi.mock('../src/hooks/useSupabase', () => ({
   useSupabase: () => ({ data: [], loading: false, error: null, refetch: vi.fn() }),
 }))

@@ -6,7 +6,7 @@ import AnimationPublic from '../src/pages/AnimationPublic'
 
 const { rpcMock } = vi.hoisted(() => ({ rpcMock: vi.fn() }))
 
-vi.mock('../src/lib/supabase', () => {
+vi.mock('../src/lib/supabasePublic', () => {
   const chain = {
     select: () => chain,
     order: () => chain,
@@ -17,14 +17,13 @@ vi.mock('../src/lib/supabase', () => {
     })
   }
   const channel = { on: () => channel, subscribe: () => ({}) }
-  return {
-    supabase: {
-      from: () => chain,
-      rpc: rpcMock,
-      channel: () => channel,
-      removeChannel: () => {}
-    }
+  const client = {
+    from: () => chain,
+    rpc: rpcMock,
+    channel: () => channel,
+    removeChannel: () => {}
   }
+  return { supabasePublic: client, supabase: client, default: client }
 })
 
 beforeEach(() => {

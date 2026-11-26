@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabasePublic as supabase } from '../lib/supabasePublic'
 
 const STORAGE_PREFIX = 'even_animation_player_'
 

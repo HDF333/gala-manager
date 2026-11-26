@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabasePublic as supabase } from '../lib/supabasePublic'
 
 export default function ProgrammePublic() {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')

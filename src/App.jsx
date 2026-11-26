@@ -21,6 +21,7 @@ import Scan from './pages/Scan'
 import Users from './pages/Users'
 import Animations from './pages/Animations'
 import AnimationPublic from './pages/AnimationPublic'
+import Sms from './pages/Sms'
 import { setCurrentEvent } from './lib/currentEvent'
 
 function AppContent() {
@@ -86,6 +87,7 @@ function AppContent() {
           <Route path="/scan" element={<Scan />} />
           <Route path="/users" element={<Users />} />
           <Route path="/animations" element={<Animations />} />
+          <Route path="/sms" element={<Sms />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>

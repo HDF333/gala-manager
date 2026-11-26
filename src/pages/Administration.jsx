@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useSupabase } from '../hooks/useSupabase'
 import { supabase } from '../lib/supabase'
+import { getCurrentEvent } from '../lib/currentEvent'
+import { sendTypedSms, loadSmsSettings } from '../lib/sms'
 
 export default function Administration() {
   const { user } = useAuth()
@@ -44,6 +46,23 @@ export default function Administration() {
       })
       // Activer le billet lié à cette catégorie
       await supabase.rpc('activate_tickets_for_guest', { p_buyer: guestId })
+
+      // SMS de confirmation de participation (si le type est actif pour l'événement)
+      const guest = guests.find(g => g.id === guestId)
+      if (guest?.phone) {
+        const eventId = getCurrentEvent()
+        Promise.all([
+          loadSmsSettings(eventId),
+          supabase.from('events').select('id,name,date,venue').eq('id', eventId).maybeSingle()
+        ]).then(([settings, { data: evRow }]) => sendTypedSms({
+          type: 'participation_confirmation',
+          event: evRow || { id: eventId },
+          guest,
+          settings,
+          categoryName: categories.find(c => c.id === guest.category_id)?.name || ''
+        })).catch(() => {})
+      }
+
       setMessage('Inscription validée avec succès ! Billet activé.')
       refetch()
       refetchTickets()

@@ -15,6 +15,7 @@ const navItems = [
   { path: '/administration', label: 'Administration', icon: '🛡️', perm: 'gerer_evenements' },
   { path: '/access-control', label: 'Contrôle d\'accès', icon: '🎟️', perm: 'scan_qr' },
   { path: '/animations', label: 'Animation', icon: '🎤', perm: 'animer_evenement' },
+  { path: '/sms', label: 'SMS', icon: '💬', perm: 'gerer_sms' },
   { path: '/tables', label: 'Tables', icon: '🍽️' },
   { path: '/sponsors', label: 'Sponsors', icon: '🤝', perm: 'gerer_finances' },
   { path: '/finances', label: 'Recettes', icon: '💰', perm: 'gerer_finances' },

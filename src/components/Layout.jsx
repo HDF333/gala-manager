@@ -3,49 +3,51 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useSupabase } from '../hooks/useSupabase'
 import { hasPerm } from '../lib/permissions'
+import { useI18n } from '../lib/i18n'
 import { getCurrentEvent, setCurrentEvent } from '../lib/currentEvent'
 
 const navItems = [
-  { path: '/events', label: 'Événements', icon: '🎭', perm: 'gerer_evenements' },
-  { path: '/scan', label: 'Scanner', icon: '📷', perm: 'scan_qr' },
-  { path: '/users', label: 'Utilisateurs', icon: '👤', perm: 'gerer_utilisateurs' },
-  { path: '/dashboard', label: 'Tableau de bord', icon: '📊' },
-  { path: '/guests', label: 'Participants', icon: '👥', perm: 'voir_invites' },
-  { path: '/inscription', label: 'Inscription', icon: '📝', perm: 'gerer_participants' },
-  { path: '/administration', label: 'Administration', icon: '🛡️', perm: 'gerer_evenements' },
-  { path: '/access-control', label: 'Contrôle d\'accès', icon: '🎟️', perm: 'scan_qr' },
-  { path: '/animations', label: 'Animation', icon: '🎤', perm: 'animer_evenement' },
-  { path: '/sms', label: 'SMS', icon: '💬', perm: 'gerer_sms' },
-  { path: '/tables', label: 'Tables', icon: '🍽️' },
-  { path: '/sponsors', label: 'Sponsors', icon: '🤝', perm: 'gerer_finances' },
-  { path: '/finances', label: 'Recettes', icon: '💰', perm: 'gerer_finances' },
-  { path: '/expenses', label: 'Dépenses', icon: '💸', perm: 'gerer_finances' },
-  { path: '/program', label: 'Programme', icon: '📅', perm: 'gerer_evenements' },
-  { path: '/committee', label: 'Comité', icon: '👥', perm: 'gerer_evenements' },
-  { path: '/qrcodes', label: 'QR Codes', icon: '📱', perm: 'gerer_evenements' },
+  { path: '/events', labelKey: 'nav.events', icon: '🎭', perm: 'gerer_evenements' },
+  { path: '/scan', labelKey: 'nav.scan', icon: '📷', perm: 'scan_qr' },
+  { path: '/users', labelKey: 'nav.users', icon: '👤', perm: 'gerer_utilisateurs' },
+  { path: '/dashboard', labelKey: 'nav.dashboard', icon: '📊' },
+  { path: '/guests', labelKey: 'nav.guests', icon: '👥', perm: 'voir_invites' },
+  { path: '/inscription', labelKey: 'nav.inscription', icon: '📝', perm: 'gerer_participants' },
+  { path: '/administration', labelKey: 'nav.administration', icon: '🛡️', perm: 'gerer_evenements' },
+  { path: '/access-control', labelKey: 'nav.access', icon: '🎟️', perm: 'scan_qr' },
+  { path: '/animations', labelKey: 'nav.animation', icon: '🎤', perm: 'animer_evenement' },
+  { path: '/sms', labelKey: 'nav.sms', icon: '💬', perm: 'gerer_sms' },
+  { path: '/tables', labelKey: 'nav.tables', icon: '🍽️' },
+  { path: '/sponsors', labelKey: 'nav.sponsors', icon: '🤝', perm: 'gerer_finances' },
+  { path: '/finances', labelKey: 'nav.finances', icon: '💰', perm: 'gerer_finances' },
+  { path: '/expenses', labelKey: 'nav.expenses', icon: '💸', perm: 'gerer_finances' },
+  { path: '/program', labelKey: 'nav.program', icon: '📅', perm: 'gerer_evenements' },
+  { path: '/committee', labelKey: 'nav.committee', icon: '👥', perm: 'gerer_evenements' },
+  { path: '/qrcodes', labelKey: 'nav.qrcodes', icon: '📱', perm: 'gerer_evenements' },
 ]
 
 // Action "Nouveau" propre à chaque page du menu
 const QUICK_ACTIONS = {
-  '/dashboard': { label: 'Nouvelle inscription', selector: 'form' },
-  '/events': { label: 'Nouvel événement', selector: 'form' },
-  '/guests': { label: 'Inscrire un participant', to: '/inscription' },
-  '/inscription': { label: 'Nouvelle inscription', selector: 'form' },
-  '/administration': { label: 'Nouvelle catégorie', selector: 'form' },
-  '/users': { label: 'Nouvel utilisateur', selector: '#create-user' },
-  '/sponsors': { label: 'Nouveau sponsor', selector: 'form' },
-  '/finances': { label: 'Nouvelle recette', selector: 'form' },
-  '/expenses': { label: 'Nouvelle dépense', selector: 'form' },
-  '/program': { label: 'Nouvel élément', selector: 'form' },
-  '/committee': { label: 'Nouveau membre', selector: 'form' },
-  '/qrcodes': { label: 'Générer un QR code', selector: 'select' },
-  '/animations': { label: 'Nouvelle animation', selector: 'form' },
+  '/dashboard': { labelKey: 'quick.newRegistration', selector: 'form' },
+  '/events': { labelKey: 'quick.newEvent', selector: 'form' },
+  '/guests': { labelKey: 'quick.registerGuest', to: '/inscription' },
+  '/inscription': { labelKey: 'quick.newRegistration', selector: 'form' },
+  '/administration': { labelKey: 'quick.newCategory', selector: 'form' },
+  '/users': { labelKey: 'quick.newUser', selector: '#create-user' },
+  '/sponsors': { labelKey: 'quick.newSponsor', selector: 'form' },
+  '/finances': { labelKey: 'quick.newIncome', selector: 'form' },
+  '/expenses': { labelKey: 'quick.newExpense', selector: 'form' },
+  '/program': { labelKey: 'quick.newItem', selector: 'form' },
+  '/committee': { labelKey: 'quick.newMember', selector: 'form' },
+  '/qrcodes': { labelKey: 'quick.generateQr', selector: 'select' },
+  '/animations': { labelKey: 'quick.newAnimation', selector: 'form' },
 }
 
 function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
   const { user, logout, profile } = useAuth()
+  const { t, lang, setLang } = useI18n()
   const location = useLocation()
   const navigate = useNavigate()
   const { data: events = [] } = useSupabase('events')
@@ -118,7 +120,7 @@ function Layout({ children }) {
                 aria-current={active ? 'page' : undefined}
               >
                 <span className="icon">{item.icon}</span>
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </Link>
             )
           })}
@@ -138,7 +140,7 @@ function Layout({ children }) {
             disabled={loggingOut}
             className="sidebar-footer-link"
           >
-            {loggingOut ? 'Déconnexion...' : '✕ Déconnexion'}
+            {loggingOut ? t('common.loggingOut') : '✕ ' + t('common.logout')}
           </button>
         </div>
       </aside>
@@ -154,9 +156,31 @@ function Layout({ children }) {
           <div className="header-right" style={{ position: 'relative' }}>
             {quickAction && (
               <button className="btn btn-gold btn-sm" onClick={handleQuickAction}>
-                ➕ {quickAction.label}
+                ➕ {t(quickAction.labelKey)}
               </button>
             )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(255,255,255,0.08)', borderRadius: 999, padding: '0.15rem' }}>
+              {['fr', 'en'].map(code => (
+                <button
+                  key={code}
+                  onClick={() => setLang(code)}
+                  title={code === 'fr' ? 'Français' : 'English'}
+                  style={{
+                    border: 'none',
+                    cursor: 'pointer',
+                    borderRadius: 999,
+                    padding: '0.25rem 0.6rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    letterSpacing: 0.5,
+                    background: lang === code ? '#d4af37' : 'transparent',
+                    color: lang === code ? '#011A43' : '#B9C7E6'
+                  }}
+                >
+                  {code.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
         </header>
         <div className="content">

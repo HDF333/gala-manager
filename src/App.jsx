@@ -23,9 +23,11 @@ import Animations from './pages/Animations'
 import AnimationPublic from './pages/AnimationPublic'
 import Sms from './pages/Sms'
 import { setCurrentEvent } from './lib/currentEvent'
+import { LanguageProvider, useI18n } from './lib/i18n'
 
 function AppContent() {
   const { user, loading } = useAuth()
+  const { t } = useI18n()
 
   // Lien public : tout participant peut s'inscrire lui-même (tickets choisis par le participant)
   if (typeof window !== 'undefined' && window.location.pathname === '/inscription-publique') {
@@ -56,7 +58,7 @@ function AppContent() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#010B26', color: '#ffffff' }}>
         <div style={{ textAlign: 'center' }}>
           <img src="/logo.jpg" alt="EVEN MANAGER" style={{ width: '96px', height: '96px', borderRadius: '16px', marginBottom: '1rem' }} />
-          <p style={{ color: '#a0a0a0' }}>Chargement de EVEN MANAGER...</p>
+          <p style={{ color: '#a0a0a0' }}>{t('common.loading')}</p>
         </div>
       </div>
     )
@@ -97,6 +99,7 @@ function AppContent() {
 
 function AuthPage() {
   const { login } = useAuth()
+  const { t } = useI18n()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -111,8 +114,8 @@ function AuthPage() {
       await login({ email: email.trim(), password })
     } catch (err) {
       setError(err.code === 'invalid_credentials'
-        ? 'Email ou mot de passe incorrect. Utilisez un compte de l’application, pas celui du tableau de bord Supabase.'
-        : err.message || 'Erreur de connexion au serveur')
+        ? t('auth.badCredentials')
+        : err.message || t('common.error'))
     } finally {
       setLoading(false)
     }
@@ -125,7 +128,7 @@ function AuthPage() {
         <div>
           <h1 style={{ color: '#ffffff', marginBottom: '0.5rem' }}>EVEN MANAGER</h1>
           <p style={{ color: '#a0a0a0', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-            Connexion au dîner-gala
+            {t('auth.subtitle')}
           </p>
           <form onSubmit={handleSubmit}>
             {error && (
@@ -134,7 +137,7 @@ function AuthPage() {
               </div>
             )}
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', color: '#a0a0a0', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Email</label>
+              <label style={{ display: 'block', color: '#a0a0a0', marginBottom: '0.5rem', fontSize: '0.9rem' }}>{t('auth.email')}</label>
               <input
                 type="email"
                 value={email}
@@ -154,7 +157,7 @@ function AuthPage() {
               />
             </div>
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', color: '#a0a0a0', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Mot de passe</label>
+              <label style={{ display: 'block', color: '#a0a0a0', marginBottom: '0.5rem', fontSize: '0.9rem' }}>{t('auth.password')}</label>
               <input
                 type="password"
                 value={password}
@@ -189,7 +192,7 @@ function AuthPage() {
                 width: '100%'
               }}
             >
-              {loading ? 'Connexion...' : 'Se connecter'}
+              {loading ? t('auth.signingIn') : t('auth.signIn')}
             </button>
           </form>
         </div>
@@ -199,11 +202,12 @@ function AuthPage() {
 }
 
 function NotFound() {
+  const { t } = useI18n()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '60vh', gap: '1rem' }}>
       <div style={{ fontSize: '3rem' }}>🚫</div>
-      <h2 style={{ color: '#ffffff', margin: 0 }}>Page introuvable</h2>
-      <p style={{ color: '#a0a0a0', margin: 0 }}>Cette page n'existe pas dans GALA MANAGER.</p>
+      <h2 style={{ color: '#ffffff', margin: 0 }}>{t('page.notFound')}</h2>
+      <p style={{ color: '#a0a0a0', margin: 0 }}>Cette page n'existe pas dans EVEN MANAGER.</p>
       <a href="/dashboard" className="btn btn-gold">Retour au tableau de bord</a>
     </div>
   )
@@ -231,9 +235,11 @@ function PublicRegistrationClosed() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </LanguageProvider>
   )
 }
 

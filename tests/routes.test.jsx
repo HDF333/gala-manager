@@ -22,9 +22,11 @@ const routes = [...source.matchAll(/<Route path="([^"]+)" element=\{<([A-Za-z]+)
     if (!fs.existsSync(pagePath)) return null
     const page = fs.readFileSync(pagePath, 'utf8')
     // Les pages publiques plein écran (téléphone) n'utilisent pas .page-title
-    const title = page.match(/className="page-title">([^<]+)</)
-    if (!title) return null
-    return [route, title[1]]
+    const titleMatch = page.match(/className="page-title">([^<]+)</)
+    if (!titleMatch) return null
+    const raw = titleMatch[1].trim()
+    // Titre dynamique (i18n) : vérifié comme non vide au rendu
+    return [route, raw.startsWith('{') ? null : raw]
   })
   .filter(Boolean)
 
@@ -43,7 +45,11 @@ test('route coverage includes all declared pages and the home alias', () => {
 test.each(routes)('renders %s without a blank screen', async (route, title) => {
   window.history.replaceState({}, '', route)
   const { container } = render(<App />)
-  await waitFor(() => expect(container.querySelector('.page-title')?.textContent).toBe(title))
+  if (title) {
+    await waitFor(() => expect(container.querySelector('.page-title')?.textContent).toBe(title))
+  } else {
+    await waitFor(() => expect((container.querySelector('.page-title')?.textContent || '').length).toBeGreaterThan(0))
+  }
   if (route !== '/inscription-publique') {
     expect(container.querySelector('.sidebar')).not.toBeNull()
   }

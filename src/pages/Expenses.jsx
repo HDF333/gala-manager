@@ -14,7 +14,7 @@ export default function Expenses() {
 
   const totalPaid = expenses.filter(e => e.status === 'paid').reduce((s, e) => s + (e.amount || 0), 0)
   const totalPending = expenses.filter(e => e.status === 'pending').reduce((s, e) => s + (e.amount || 0), 0)
-  const budget = activeEvent?.budget_depenses ? Number(activeEvent.budget_depenses) : null
+  const budget = activeEvent?.budget_depenses != null ? Number(activeEvent.budget_depenses) : null
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -90,22 +90,53 @@ export default function Expenses() {
       )}
 
       <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-        <div className="card" style={{ padding: '1.5rem' }}>
-          <strong style={{ color: '#d4af37', fontSize: '1.5rem' }}>{budget !== null ? '₣ ' + budget.toLocaleString('fr-FR') : '-'}</strong>
-          <p style={{ color: '#6a6a6a', fontSize: '0.9rem' }}>Budget dépenses</p>
+        <div className="card" style={{ padding: '1.25rem', marginBottom: 0 }}>
+          <div className="kpi-label">Budget dépenses</div>
+          <div className="kpi-value" style={{ color: 'var(--accent)' }}>{budget !== null ? '₣ ' + budget.toLocaleString('fr-FR') : '—'}</div>
         </div>
-        <div className="card" style={{ padding: '1.5rem' }}>
-          <strong style={{ color: '#1a7a3a', fontSize: '1.5rem' }}>₣ {totalPaid.toLocaleString('fr-FR')}</strong>
-          <p style={{ color: '#6a6a6a', fontSize: '0.9rem' }}>Payé</p>
+        <div className="card" style={{ padding: '1.25rem', marginBottom: 0 }}>
+          <div className="kpi-label">Dépenses réelles payées</div>
+          <div className="kpi-value" style={{ color: 'var(--danger)' }}>₣ {totalPaid.toLocaleString('fr-FR')}</div>
         </div>
-        <div className="card" style={{ padding: '1.5rem' }}>
-          <strong style={{ color: '#c99700', fontSize: '1.5rem' }}>₣ {totalPending.toLocaleString('fr-FR')}</strong>
-          <p style={{ color: '#6a6a6a', fontSize: '0.9rem' }}>En attente</p>
+        <div className="card" style={{ padding: '1.25rem', marginBottom: 0 }}>
+          <div className="kpi-label">Engagé en attente</div>
+          <div className="kpi-value" style={{ color: 'var(--warning)' }}>₣ {totalPending.toLocaleString('fr-FR')}</div>
         </div>
-        <div className="card" style={{ padding: '1.5rem' }}>
-          <strong style={{ color: '#1a7a3a', fontSize: '1.5rem' }}>{budget !== null && budget > 0 ? Math.round((totalPaid / budget) * 100) + '%' : '-'}</strong>
-          <p style={{ color: '#6a6a6a', fontSize: '0.9rem' }}>Budget consommé</p>
+        <div className="card" style={{ padding: '1.25rem', marginBottom: 0 }}>
+          <div className="kpi-label">Reste disponible</div>
+          <div className="kpi-value" style={{ color: (budget - totalPaid) >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+            {budget !== null ? '₣ ' + (budget - totalPaid).toLocaleString('fr-FR') : '—'}
+          </div>
         </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Évaluation : réel vs prévisionnel</h2>
+          <a href="/budget" className="btn btn-secondary btn-sm">⚖️ Modifier le budget</a>
+        </div>
+        {budget === null || budget === 0 ? (
+          <p style={{ margin: 0, color: 'var(--text-muted)' }}>Aucun budget défini pour cet événement. Renseignez-le dans le menu Budget.</p>
+        ) : (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-soft)' }}>
+              <span>Réel payé : <strong>₣ {totalPaid.toLocaleString('fr-FR')}</strong></span>
+              <span>Budget : <strong>₣ {budget.toLocaleString('fr-FR')}</strong></span>
+            </div>
+            <div style={{ height: 12, background: '#EDF2FB', borderRadius: 999, overflow: 'hidden', margin: '0.45rem 0 0.6rem' }}>
+              <div style={{ width: Math.min(100, Math.round((totalPaid / budget) * 100)) + '%', height: '100%', background: totalPaid > budget ? 'linear-gradient(90deg,#e06a6a,#b81a1a)' : 'linear-gradient(90deg,#2ea35c,#1a7a3a)' }} />
+            </div>
+            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.9rem' }}>
+              <span>Consommé : <strong>{Math.round((totalPaid / budget) * 100)} %</strong></span>
+              <span>Engagé (payé + attente) : <strong>₣ {(totalPaid + totalPending).toLocaleString('fr-FR')}</strong></span>
+              <span style={{ color: totalPaid > budget ? 'var(--danger)' : 'var(--success)', fontWeight: 600 }}>
+                {totalPaid > budget
+                  ? 'Dépassement de ₣ ' + (totalPaid - budget).toLocaleString('fr-FR')
+                  : 'Économie de ₣ ' + (budget - totalPaid).toLocaleString('fr-FR')}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="card">

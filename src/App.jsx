@@ -22,6 +22,8 @@ import Users from './pages/Users'
 import Animations from './pages/Animations'
 import AnimationPublic from './pages/AnimationPublic'
 import Sms from './pages/Sms'
+import Budget from './pages/Budget'
+import ProgrammePublic from './pages/ProgrammePublic'
 import { setCurrentEvent } from './lib/currentEvent'
 import { LanguageProvider, useI18n } from './lib/i18n'
 
@@ -48,6 +50,17 @@ function AppContent() {
       <Router>
         <Routes>
           <Route path="/animation" element={<AnimationPublic />} />
+        </Routes>
+      </Router>
+    )
+  }
+
+  // Programme public (QR code partagé aux participants)
+  if (typeof window !== 'undefined' && window.location.pathname === '/programme') {
+    return (
+      <Router>
+        <Routes>
+          <Route path="/programme" element={<ProgrammePublic />} />
         </Routes>
       </Router>
     )
@@ -90,6 +103,7 @@ function AppContent() {
           <Route path="/users" element={<Users />} />
           <Route path="/animations" element={<Animations />} />
           <Route path="/sms" element={<Sms />} />
+          <Route path="/budget" element={<Budget />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>

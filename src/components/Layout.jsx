@@ -20,6 +20,7 @@ const navItems = [
   { path: '/tables', labelKey: 'nav.tables', icon: '🍽️' },
   { path: '/sponsors', labelKey: 'nav.sponsors', icon: '🤝', perm: 'gerer_finances' },
   { path: '/finances', labelKey: 'nav.finances', icon: '💰', perm: 'gerer_finances' },
+  { path: '/budget', labelKey: 'nav.budget', icon: '💼', perm: 'gerer_finances' },
   { path: '/expenses', labelKey: 'nav.expenses', icon: '💸', perm: 'gerer_finances' },
   { path: '/program', labelKey: 'nav.program', icon: '📅', perm: 'gerer_evenements' },
   { path: '/committee', labelKey: 'nav.committee', icon: '👥', perm: 'gerer_evenements' },

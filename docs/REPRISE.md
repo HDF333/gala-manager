@@ -1,5 +1,14 @@
 # EVEN MANAGER — état du projet (multi-événements)
 
+## 2026-11-23 — SMS par événement (SMS MANAGER)
+
+- 10 types de message activables par événement : invitation événement, invitation à s'inscrire, confirmation d'inscription, rappel de paiement, confirmation de paiement, confirmation de participation, rappels J-7 et J-1, message du jour J, remerciement.
+- Réglages `sms_settings` (enabled + templates jsonb par événement) et journal `sms_log` ; RPC `log_sms` (anon inclus).
+- Écran **SMS** : activation par type, modèle avec variables `{{prenom}} {{evenement}} {{date}} {{lieu}} {{table}} {{categorie}} {{montant}} {{billet}} {{lien}}`, aperçu, choix des destinataires (tous / confirmés / en attente / payés / impayés / présents / numéros manuels), envoi séquentiel + journal.
+- Proxys serveur : Edge Function Supabase `sms` (clé `SMS_MANAGER_API_KEY` en secret, déployée) et fonction Vercel `/api/sms` en secours.
+- Automatique : confirmation d'inscription à l'inscription, confirmation de participation à la validation admin (si le type est actif).
+- Permission `gerer_sms` (Administrateur, Gestionnaire).
+
 ## 2026-11-23 — Anti-doublons, tables et module d'animation
 
 - **Anti-doublons** : clé unique par événement (téléphone normalisé > email > nom), index unique partiel `guests_dedupe_uidx`, refus explicite dans `register_guest` (« Doublon : … est déjà inscrit(e) »).

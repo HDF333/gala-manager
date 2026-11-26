@@ -1,5 +1,12 @@
 # EVEN MANAGER — état du projet (multi-événements)
 
+## 2026-11-23 — Langue, paiements et recettes
+
+- **Langue FR/EN** : sélecteur dans l'en-tête (mémorisé en localStorage), i18n maison `src/lib/i18n.jsx` (menu, en-tête, actions rapides, connexion, écran Recettes). Traductions des autres pages à compléter progressivement.
+- **Paiement reçu à la confirmation** : trigger `guests_payment_sync` — dès qu'un participant passe à `confirmed`, sa ligne `finances` passe à `paid` (création incluse).
+- **Recettes** : KPI Montant reçu / en attente / total / budget ; seuls les paiements reçus sont comptabilisés ; ventilation ventes vs manuel ; formulaire verrouillé sur le type « Manuel » (libellé libre), lignes « Vente » non modifiables/supprimables ; filtres Toutes/Ventes/Manuelles.
+- Migration : `supabase/migrations/20261123_paiements_recettes.sql`.
+
 ## 2026-11-23 — SMS par événement (SMS MANAGER)
 
 - 10 types de message activables par événement : invitation événement, invitation à s'inscrire, confirmation d'inscription, rappel de paiement, confirmation de paiement, confirmation de participation, rappels J-7 et J-1, message du jour J, remerciement.

@@ -133,6 +133,45 @@ export function renderSms(template, ctx = {}) {
   })
 }
 
+/**
+ * Découpe un texte en plusieurs SMS de ≤ max caractères.
+ * Coupe aux espaces, ne coupe jamais un mot ni une URL (un jeton trop long
+ * reste seul dans son segment). Nécessaire car la passerelle Android
+ * (sendTextMessage) échoue en generic_failure au-delà d'un segment.
+ */
+export function splitSms(content, max = 160) {
+  const text = String(content || '').replace(/\s+/g, ' ').trim()
+  if (!text) return ['']
+  if (text.length <= max) return [text]
+  const words = text.split(' ')
+  const parts = []
+  let cur = ''
+  const flush = () => {
+    if (cur) {
+      parts.push(cur)
+      cur = ''
+    }
+  }
+  for (const w of words) {
+    if (w.length > max) {
+      flush()
+      parts.push(w)
+      continue
+    }
+    if (!cur) {
+      cur = w
+      continue
+    }
+    if (cur.length + 1 + w.length <= max) cur += ' ' + w
+    else {
+      flush()
+      cur = w
+    }
+  }
+  flush()
+  return parts
+}
+
 /** Contexte de fusion pour un invité + un événement. */
 export function smsContext({ guest = {}, event = {}, categoryName = '', amount = '', lien = '' } = {}) {
   const date = event.date ? new Date(event.date + 'T00:00:00').toLocaleDateString('fr-FR') : ''

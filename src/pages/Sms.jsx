@@ -4,7 +4,7 @@ import { useSupabase } from '../hooks/useSupabase'
 import { getCurrentEvent } from '../lib/currentEvent'
 import { hasPerm } from '../lib/permissions'
 import {
-  SMS_TYPES, SMS_TYPE_MAP, SMS_AUDIENCES, normalizePhone,
+  SMS_TYPES, SMS_AUDIENCES, normalizePhone, splitSms,
   loadSmsSettings, saveSmsSettings, sendSms, logSms, renderSms, smsContext
 } from '../lib/sms'
 
@@ -14,6 +14,14 @@ const STATUS_LABEL = {
   duplicate: { label: 'Déjà envoyé', className: 'badge-info' },
   failed: { label: 'Échec', className: 'badge-danger' },
   skipped: { label: 'Ignoré', className: 'badge-muted' }
+}
+
+// Clé réservée dans le jsonb `templates` pour mémoriser les types personnalisés.
+const CUSTOM_TYPES_KEY = '__custom__'
+
+function loadCustomTypes(settings) {
+  const arr = settings?.templates?.[CUSTOM_TYPES_KEY]
+  return Array.isArray(arr) ? arr : []
 }
 
 export default function Sms() {
@@ -37,15 +45,25 @@ export default function Sms() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [run, setRun] = useState({ type: null, done: 0, total: 0, ok: 0, failed: 0, errors: [] })
+  const [customTypes, setCustomTypes] = useState([])
 
   useEffect(() => {
     let alive = true
     if (!eventId) return
-    loadSmsSettings(eventId).then(s => { if (alive) { setSettings(s); setDraft(s.templates) } })
+    loadSmsSettings(eventId).then(s => { if (alive) { setSettings(s); setDraft(s.templates); setCustomTypes(loadCustomTypes(s)) } })
     return () => { alive = false }
   }, [eventId])
 
   const catName = (id) => categories.find(c => c.id === id)?.name || ''
+
+  const allTypes = useMemo(
+    () => [
+      ...SMS_TYPES,
+      ...customTypes.map(c => ({ ...c, template: settings?.templates?.[c.key] ?? '' }))
+    ],
+    [customTypes, settings]
+  )
+  const typeMap = useMemo(() => allTypes.reduce((acc, t) => ({ ...acc, [t.key]: t }), {}), [allTypes])
 
   const publicLink = typeof window !== 'undefined' && eventId
     ? window.location.origin + '/inscription-publique?event=' + eventId
@@ -103,12 +121,12 @@ export default function Sms() {
   const toggleType = async (key) => {
     if (!settings || !eventId) return
     const enabled = { ...settings.enabled, [key]: !enabledFor(key) }
-    const templates = { ...settings.templates, ...draft }
+    const templates = { ...settings.templates, ...draft, [CUSTOM_TYPES_KEY]: customTypes }
     setSettings({ enabled, templates })
     setSaving(true)
     try {
       await saveSmsSettings(eventId, { enabled, templates })
-      setMessage(`« ${SMS_TYPE_MAP[key].label} » ${enabled[key] ? 'activé' : 'désactivé'} pour cet événement.`)
+      setMessage(`« ${typeMap[key]?.label || key} » ${enabled[key] ? 'activé' : 'désactivé'} pour cet événement.`)
     } catch (err) {
       setMessage('Erreur : ' + (err.message || 'Enregistrement impossible'))
     } finally {
@@ -120,7 +138,7 @@ export default function Sms() {
     if (!settings || !eventId) return
     setSaving(true)
     try {
-      const templates = { ...settings.templates, ...draft }
+      const templates = { ...settings.templates, ...draft, [CUSTOM_TYPES_KEY]: customTypes }
       await saveSmsSettings(eventId, { enabled: settings.enabled, templates })
       setSettings({ ...settings, templates })
       setMessage('Modèles enregistrés pour cet événement.')
@@ -131,18 +149,49 @@ export default function Sms() {
     }
   }
 
+  const addCustomType = async () => {
+    if (!settings || !eventId) return
+    const label = window.prompt('Nom du nouveau type de SMS :', 'Message libre')
+    if (!label || !label.trim()) return
+    const key = 'custom_' + Date.now().toString(36)
+    const type = {
+      key,
+      label: label.trim(),
+      icon: '✉️',
+      audience: 'manual',
+      hint: 'Type personnalisé — choisissez les numéros ou une audience.',
+      custom: true
+    }
+    const template = 'Bonjour {{prenom}}, votre message ici. {{evenement}} — {{date}}.'
+    setCustomTypes([...customTypes, type])
+    setDraft({ ...draft, [key]: template })
+    setSettings({ ...settings, enabled: { ...settings.enabled, [key]: true } })
+    setOpenType(key)
+    setMessage(`Type « ${type.label} » ajouté. Modifiez le modèle puis « Enregistrer les modèles ».`)
+  }
+
+  const removeCustomType = (key) => {
+    if (!window.confirm('Supprimer ce type personnalisé ?')) return
+    setCustomTypes(customTypes.filter(c => c.key !== key))
+    const nextDraft = { ...draft }
+    delete nextDraft[key]
+    setDraft(nextDraft)
+    setMessage('Type supprimé. Cliquez sur « Enregistrer les modèles » pour confirmer.')
+  }
+
   const preview = (key) => {
-    const sample = recipientsFor(audiences[key] || SMS_TYPE_MAP[key].audience, key)[0] ||
+    const sample = recipientsFor(audiences[key] || typeMap[key]?.audience, key)[0] ||
       guests.find(g => g.phone) || { first_name: 'Awa', last_name: 'Koné', table_number: 1, company: 'Tribu' }
     const cat = catName(sample.category_id)
     const finance = finances.find(f => f.guest_id === sample.id)
-    return renderSms(draft[key] || SMS_TYPE_MAP[key].template, smsContext({
+    return renderSms(draft[key] || typeMap[key]?.template || '', smsContext({
       guest: sample, event, categoryName: cat, amount: finance?.amount || 0, lien: publicLink
     }))
   }
 
   const sendForType = async (key) => {
-    const def = SMS_TYPE_MAP[key]
+    const def = typeMap[key]
+    if (!def) return
     const audience = audiences[key] || def.audience
     const targets = recipientsFor(audience, key)
     if (targets.length === 0) {
@@ -152,6 +201,9 @@ export default function Sms() {
     const template = draft[key] || def.template
     if (!window.confirm(`Envoyer « ${def.label} » à ${targets.length} destinataire(s) ?`)) return
 
+    // runId unique par clic : chaque nouvel envoi n'est plus bloqué comme
+    // « doublon » (l'idempotence protège seulement les reprises réseau).
+    const runId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
     setRun({ type: key, done: 0, total: targets.length, ok: 0, failed: 0, errors: [] })
     let ok = 0
     let failed = 0
@@ -164,33 +216,38 @@ export default function Sms() {
         guest, event, categoryName: catName(guest.category_id),
         amount: finance?.amount || 0, lien: publicLink
       }))
-      const reference = guest.manual
-        ? `${key}-${eventId}-${normalizePhone(guest.phone)}-${new Date().toISOString().slice(0, 10)}`
-        : `${key}-${eventId}-${guest.id}-${new Date().toISOString().slice(0, 10)}`
+      const baseRef = guest.manual
+        ? `${key}-${eventId}-${normalizePhone(guest.phone)}-${runId}`
+        : `${key}-${eventId}-${guest.id}-${runId}`
+      // Fractionnement : la passerelle Android n'envoie qu'un seul segment.
+      const parts = splitSms(content, 160)
 
-      const result = await sendSms({ to: guest.phone, content, reference })
-      if (result.ok) {
-        ok++
-      } else {
-        failed++
-        errors.push(`${guest.first_name || ''} ${guest.phone} : ${result.message || result.error || 'échec'}`)
+      for (let p = 0; p < parts.length; p++) {
+        const reference = parts.length > 1 ? `${baseRef}-p${p + 1}` : baseRef
+        const result = await sendSms({ to: guest.phone, content: parts[p], reference })
+        if (result.ok) {
+          ok++
+        } else {
+          failed++
+          errors.push(`${guest.first_name || ''} ${guest.phone} : ${result.message || result.error || 'échec'}`)
+        }
+        await logSms({
+          eventId,
+          type: key,
+          guestId: guest.manual ? null : guest.id,
+          phone: normalizePhone(guest.phone),
+          content: parts[p],
+          reference,
+          status: result.ok ? (result.duplicate ? 'duplicate' : 'queued') : 'failed',
+          error: result.ok ? null : (result.error || result.message || 'error')
+        })
+        await new Promise(r => setTimeout(r, 450))
       }
-      await logSms({
-        eventId,
-        type: key,
-        guestId: guest.manual ? null : guest.id,
-        phone: normalizePhone(guest.phone),
-        content,
-        reference,
-        status: result.ok ? (result.duplicate ? 'duplicate' : 'queued') : 'failed',
-        error: result.ok ? null : (result.error || result.message || 'error')
-      })
       setRun({ type: key, done: i + 1, total: targets.length, ok, failed, errors: [...errors] })
-      await new Promise(r => setTimeout(r, 450))
     }
 
     setRun({ type: null, done: targets.length, total: targets.length, ok, failed, errors })
-    setMessage(`« ${def.label} » : ${ok} envoyé(s), ${failed} échec(s).`)
+    setMessage(`« ${def.label} » : ${ok} SMS envoyé(s), ${failed} échec(s).`)
     refetchLogs()
   }
 
@@ -248,13 +305,16 @@ export default function Sms() {
       <div className="card">
         <div className="card-header">
           <h2 className="card-title">Types de message</h2>
-          <span className="badge badge-gold">
-            {SMS_TYPES.filter(t => enabledFor(t.key)).length} / {SMS_TYPES.length} actifs
-          </span>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <span className="badge badge-gold">
+              {allTypes.filter(t => enabledFor(t.key)).length} / {allTypes.length} actifs
+            </span>
+            <button className="btn btn-secondary btn-sm" onClick={addCustomType}>➕ Nouveau type</button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          {SMS_TYPES.map(t => {
+          {allTypes.map(t => {
             const audience = audiences[t.key] || t.audience
             const count = recipientsFor(audience, t.key).length
             const running = run.type === t.key
@@ -291,6 +351,9 @@ export default function Sms() {
                   <button className="btn btn-gold btn-sm" onClick={() => sendForType(t.key)} disabled={count === 0 || !!run.type}>
                     {running ? `${run.done}/${run.total}` : '📨 Envoyer'}
                   </button>
+                  {t.custom && (
+                    <button className="btn btn-secondary btn-sm" title="Supprimer ce type" onClick={() => removeCustomType(t.key)}>✕</button>
+                  )}
                 </div>
 
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>{t.hint}</div>
@@ -349,7 +412,7 @@ export default function Sms() {
           return (
             <div key={l.id} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--border)', fontSize: '0.85rem', flexWrap: 'wrap' }}>
               <span style={{ minWidth: 130, fontWeight: 600, color: 'var(--navy)' }}>
-                {SMS_TYPE_MAP[l.type]?.icon} {SMS_TYPE_MAP[l.type]?.label || l.type}
+                {typeMap[l.type]?.icon} {typeMap[l.type]?.label || l.type}
               </span>
               <span style={{ minWidth: 130, color: 'var(--text-soft)' }}>{l.phone}</span>
               <span className={`badge ${st.className}`}>{st.label}</span>

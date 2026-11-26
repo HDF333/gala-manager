@@ -1,5 +1,14 @@
 # EVEN MANAGER — état du projet (multi-événements)
 
+## 2026-11-23 — Sponsors, budget, dépenses, programme
+
+- **Sponsors** : « dépôt » devient **Engagement** ; le **Reste à verser** est une colonne calculée (engagement − payé), plus de saisie manuelle ; KPI + taux de recouvrement.
+- **Menu Budget** : saisie du budget recettes et du budget dépenses, écrits sur `events` — donc synchronisés avec « Budget recettes » (menu Recettes) et « Budget dépenses » (menu Dépenses) ; résultat prévisionnel vs réel.
+- **Dépenses** : dépenses saisies = dépenses réelles ; bloc « Évaluation réel vs prévisionnel » (budget, payé, engagé, reste, économie/dépassement).
+- **Programme** : page publique `/programme?event=ID` (consultation sans connexion) + carte « Partager le programme » : QR téléchargeable, lien copiable, envoi SMS aux participants confirmés ou à tous.
+- **Client anonyme dédié** (`src/lib/supabasePublic.js`) pour les pages publiques : une session expirée dans le navigateur ne masque plus les données (RLS anon).
+- Migrations : `20261123_engagement_budget.sql`, `20261123_programme_public.sql`.
+
 ## 2026-11-23 — Langue, paiements et recettes
 
 - **Langue FR/EN** : sélecteur dans l'en-tête (mémorisé en localStorage), i18n maison `src/lib/i18n.jsx` (menu, en-tête, actions rapides, connexion, écran Recettes). Traductions des autres pages à compléter progressivement.

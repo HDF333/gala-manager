@@ -1,5 +1,11 @@
 # EVEN MANAGER — état du projet (multi-événements)
 
+## 2026-11-23 — Utilisateurs et contrôle d'accès par événement
+
+- Menu **Utilisateurs** : liste filtrée sur l'événement actif (les comptes globaux « Tous événements » restent visibles), bascule « Cet événement / Tous », création rattachée par défaut à l'événement actif.
+- Menu **Contrôle d'accès** : journal et statistiques filtrés sur l'événement actif (`access_logs` ajouté aux tables filtrées par événement), nom de l'événement affiché.
+- La séparation reste garantie en base pour les rôles non administrateurs via les politiques RLS (`event_id = app_event()`).
+
 ## 2026-11-23 — Sponsors, budget, dépenses, programme
 
 - **Sponsors** : « dépôt » devient **Engagement** ; le **Reste à verser** est une colonne calculée (engagement − payé), plus de saisie manuelle ; KPI + taux de recouvrement.

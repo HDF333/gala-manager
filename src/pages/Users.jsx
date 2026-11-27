@@ -50,7 +50,7 @@ export default function Users() {
 
   const isAdmin = profile?.role === 'Administrateur'
   const activeEvent = events.find(e => e.id === eventId)
-  const visibleProfiles = scope === 'all' ? profiles : profiles.filter(u => u.event_id === eventId)
+  const visibleProfiles = scope === 'all' ? profiles : profiles.filter(u => u.event_id === eventId || u.event_id == null)
 
   if (!isAdmin) {
     return (

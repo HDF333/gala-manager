@@ -8,11 +8,17 @@ import { supabase } from './supabase'
 /** Normalise un numéro ivoirien en E.164 (+225…). */
 export function normalizePhone(raw) {
   if (!raw) return ''
-  let p = String(raw).replace(/[^\d+]/g, '')
+  const p = String(raw).replace(/[^\d+]/g, '')
+  if (p.startsWith('+225')) {
+    const nat = p.slice(4)
+    // Un numéro ivoirien garde son 0 : +225 07 78 18 68 19.
+    // On répare un 0 manquant (+225 7x… → +225 07x…) sans toucher au reste.
+    return nat.length === 9 ? '+2250' + nat : p
+  }
   if (p.startsWith('+')) return p
-  if (p.startsWith('00')) return '+' + p.slice(2)
-  if (p.startsWith('0')) return '+225' + p.slice(1)
-  return '+225' + p
+  if (p.startsWith('00')) return normalizePhone('+' + p.slice(2))
+  if (p.startsWith('0')) return '+225' + p // on NE supprime surtout PAS le 0
+  return '+2250' + p
 }
 
 /** Destinataires possibles pour un message. */

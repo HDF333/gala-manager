@@ -4,17 +4,20 @@ import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase'
 import { useSupabase } from '../hooks/useSupabase'
 import { useAuth } from '../contexts/AuthContext'
 import { PERMISSIONS } from '../lib/permissions'
+import { getCurrentEvent } from '../lib/currentEvent'
 
 
 export default function Users() {
   const { profile } = useAuth()
+  const eventId = getCurrentEvent()
   const { data: roles = [], insert: addRole, update: updateRole, del: deleteRole } = useSupabase('roles')
   const { data: profiles = [], insert: addProfile, update: updateProfile, del: deleteProfile, refetch: refetchProfiles } = useSupabase('profiles', 'user_id')
   const { data: events = [] } = useSupabase('events')
   const { data: categories = [], insert: insertCategory, update: updateCategory, del: deleteCategory, refetch: refetchCategories } = useSupabase('categories')
   const [roleForm, setRoleForm] = useState({ name: '', permissions: [] })
   const [editingRole, setEditingRole] = useState(null)
-  const [userForm, setUserForm] = useState({ email: '', password: '', full_name: '', role_id: '', event_id: '' })
+  const [userForm, setUserForm] = useState({ email: '', password: '', full_name: '', role_id: '', event_id: String(getCurrentEvent() || '') })
+  const [scope, setScope] = useState('event')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [catForm, setCatForm] = useState({ name: '', price: '', seats: 1, admin_only: false })
@@ -46,6 +49,8 @@ export default function Users() {
   }
 
   const isAdmin = profile?.role === 'Administrateur'
+  const activeEvent = events.find(e => e.id === eventId)
+  const visibleProfiles = scope === 'all' ? profiles : profiles.filter(u => u.event_id === eventId)
 
   if (!isAdmin) {
     return (
@@ -113,7 +118,7 @@ export default function Users() {
         event_id: userForm.event_id ? Number(userForm.event_id) : null,
         active: true
       })
-      setUserForm({ email: '', password: '', full_name: '', role_id: '', event_id: '' })
+      setUserForm({ email: '', password: '', full_name: '', role_id: '', event_id: String(getCurrentEvent() || '') })
       setMessage('Utilisateur créé : il peut se connecter avec son email et mot de passe.')
       refetchProfiles()
     } catch (err) {
@@ -322,7 +327,20 @@ export default function Users() {
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">Utilisateurs</h2>
+          <div>
+            <h2 className="card-title">Utilisateurs{scope === 'event' && activeEvent ? ' — ' + activeEvent.name : ''}</h2>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              {visibleProfiles.length} utilisateur(s) {scope === 'event' ? 'pour cet événement' : 'tous événements confondus'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <button className={'btn btn-sm ' + (scope === 'event' ? 'btn-primary' : 'btn-secondary')} onClick={() => setScope('event')}>
+              Cet événement
+            </button>
+            <button className={'btn btn-sm ' + (scope === 'all' ? 'btn-primary' : 'btn-secondary')} onClick={() => setScope('all')}>
+              Tous
+            </button>
+          </div>
         </div>
         <div className="card-body" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
@@ -336,7 +354,10 @@ export default function Users() {
               </tr>
             </thead>
             <tbody>
-              {profiles.map(u => (
+              {visibleProfiles.length === 0 && (
+                <tr><td colSpan="5" style={{ padding: '0.9rem', color: 'var(--text-muted)' }}>Aucun utilisateur pour cet événement. Créez-en un : il sera rattaché à l'événement actif.</td></tr>
+              )}
+              {visibleProfiles.map(u => (
                 <tr key={u.user_id} style={{ borderBottom: '1px solid #2a2a2a' }}>
                   <td style={{ padding: '0.75rem', fontWeight: '600' }}>{u.full_name || '—'}</td>
                   <td style={{ padding: '0.75rem' }}>{roleName(u.role_id)}</td>

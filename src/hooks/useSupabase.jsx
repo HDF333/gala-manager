@@ -4,7 +4,7 @@ import { getCurrentEvent, subscribeCurrentEvent } from '../lib/currentEvent'
 
 const EVENT_TABLES = ['categories', 'guests', 'tickets', 'qrcodes', 'tables_placement', 'program_items', 'committee_members', 'expenses', 'finances', 'sponsors',
   'animations', 'animation_questions', 'animation_players', 'animation_answers', 'animation_candidates',
-  'animation_votes', 'animation_entries', 'animation_draws', 'sms_log']
+  'animation_votes', 'animation_entries', 'animation_draws', 'sms_log', 'access_logs']
 
 export function useSupabase(table, keyColumn = 'id') {
   const [data, setData] = useState([])

@@ -1,5 +1,6 @@
 import React from 'react'
 import { useSupabase } from '../hooks/useSupabase'
+import { getCurrentEvent } from '../lib/currentEvent'
 
 export default function AccessControl() {
   const { data: logs = [] } = useSupabase('access_logs')
@@ -7,6 +8,8 @@ export default function AccessControl() {
   const { data: tickets = [] } = useSupabase('tickets')
   const { data: categories = [] } = useSupabase('categories')
   const { data: tables = [] } = useSupabase('tables_placement')
+  const { data: events = [] } = useSupabase('events')
+  const activeEvent = events.find(e => e.id === getCurrentEvent())
 
   const today = new Date().toISOString().slice(0, 10)
   const fmt = (d) => d ? new Date(d).toLocaleString('fr-FR') : '-'
@@ -37,7 +40,9 @@ export default function AccessControl() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <div className="page-title">Contrôle d'accès</div>
-      <div className="page-subtitle">Participants et invités déjà entrés le jour de l'événement</div>
+      <div className="page-subtitle">
+        {activeEvent ? 'Événement : ' + activeEvent.name + ' — ' : ''}participants et invités déjà entrés
+      </div>
 
       <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
         <div className="kpi-card">
